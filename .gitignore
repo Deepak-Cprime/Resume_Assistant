@@ -1,0 +1,10 @@
+RAG Field Guide.html
+# data and caches
+data/
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+local_resumes/

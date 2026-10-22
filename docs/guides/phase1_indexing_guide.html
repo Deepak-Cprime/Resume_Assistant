@@ -1,0 +1,1688 @@
+<title>Resume Indexing Field Guide</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+  svg: { fontCache: 'global' },
+  options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+<style>
+/* Layout: same field-manual shell as the RAG Field Guide. Sticky chapter rail, one chapter per page, ~70ch reading column.
+   Colour carries meaning: cobalt = dense / vectors, amber = sparse / keywords, violet = structured metadata, green = the method we chose. */
+:root{
+  --bg:#f4f5f8; --surface:#ffffff; --ink:#181c25; --muted:#586174; --line:#dce0e8;
+  --dense:#2b55c7; --sparse:#a65a0c; --fused:#7a3db0; --code:#eceff4; --ok:#1d7448; --bad:#b3261e;
+  --dense-soft:#e5ebfa; --sparse-soft:#f7ecdf; --fused-soft:#f0e7f8; --ok-soft:#e2f3ea;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Literata", Georgia, "Times New Roman", serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --f-ui:"Bricolage Grotesque", system-ui, -apple-system, sans-serif;
+  --shadow:0 1px 2px rgba(20,28,45,.05),0 8px 24px -10px rgba(20,28,45,.16);
+  --grad:linear-gradient(110deg,var(--dense),var(--fused) 58%,var(--sparse));
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#10131a; --surface:#171b23; --ink:#e3e6ed; --muted:#9ba4b6; --line:#2a303c;
+  --dense:#87a3ff; --sparse:#eea957; --fused:#c595f2; --code:#1d222c; --ok:#5fcf93; --bad:#ff8a80;
+  --dense-soft:#1c2540; --sparse-soft:#33261a; --fused-soft:#2a1f38; --ok-soft:#173226;
+  --shadow:0 1px 2px rgba(0,0,0,.35),0 10px 28px -12px rgba(0,0,0,.7); color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#10131a; --surface:#171b23; --ink:#e3e6ed; --muted:#9ba4b6; --line:#2a303c;
+  --dense:#87a3ff; --sparse:#eea957; --fused:#c595f2; --code:#1d222c; --ok:#5fcf93; --bad:#ff8a80;
+  --dense-soft:#1c2540; --sparse-soft:#33261a; --fused-soft:#2a1f38; --ok-soft:#173226;
+  --shadow:0 1px 2px rgba(0,0,0,.35),0 10px 28px -12px rgba(0,0,0,.7); color-scheme:dark }
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:radial-gradient(1100px 520px at 92% -8%,var(--fused-soft),transparent 62%),radial-gradient(900px 520px at -5% 0%,var(--dense-soft),transparent 58%),var(--bg);background-attachment:fixed;color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.65;margin:0}
+a{color:var(--dense)}
+:focus-visible{outline:2px solid var(--dense);outline-offset:2px}
+#prog{position:fixed;top:0;left:0;height:3px;width:0;background:var(--grad);z-index:60}
+.shell{display:grid;grid-template-columns:270px minmax(0,1fr);min-height:100vh}
+.rail{position:sticky;top:env(safe-area-inset-top,0px);height:100vh;overflow-y:auto;box-shadow:var(--shadow);
+  padding-block:28px 40px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:18px;font-family:var(--f-ui);background:var(--surface)}
+.brand{font-family:var(--f-display);font-weight:700;font-size:23px;letter-spacing:-.01em;line-height:1.1}
+.brand small{display:block;font-weight:500;font-size:12px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:6px}
+.legend{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 10px}
+.tag{font-family:var(--f-mono);font-size:11px;padding:2px 7px;border-radius:4px}
+.t-dense{background:var(--dense-soft);color:var(--dense)} .t-sparse{background:var(--sparse-soft);color:var(--sparse)} .t-fused{background:var(--fused-soft);color:var(--fused)} .t-ok{background:var(--ok-soft);color:var(--ok)}
+.grp{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:18px 0 6px}
+.rail ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+.rail button{all:unset;cursor:pointer;display:grid;grid-template-columns:26px 1fr;align-items:baseline;width:100%;box-sizing:border-box;
+  padding:6px 8px;border-radius:6px;font-size:14.5px;color:var(--ink);transition:background .15s,transform .15s;position:relative}
+.rail button span{font-family:var(--f-mono);font-size:11.5px;color:var(--muted)}
+.rail button:hover{background:var(--code);transform:translateX(2px)}
+.rail button[aria-current="true"]{background:var(--dense-soft);color:var(--dense);font-weight:600}
+.rail button[aria-current="true"] span{color:var(--dense)}
+.rail button[aria-current="true"]::before{content:"";position:absolute;left:-2px;top:6px;bottom:6px;width:3px;border-radius:3px;background:var(--grad)}
+.rail button:focus-visible{outline:2px solid var(--dense)}
+.rail button.tbtn{display:inline-block;width:auto;white-space:nowrap;padding:5px 13px;border:1px solid var(--line);background:var(--code);border-radius:999px;font:500 12.5px var(--f-ui);margin:8px 0 4px}
+.rail button.tbtn:hover{transform:none;border-color:var(--dense)}
+.tbtn{font-family:var(--f-ui);font-size:12.5px;border:1px solid var(--line);background:var(--code);color:var(--ink);border-radius:999px;padding:4px 12px;cursor:pointer}
+.mbar{display:none}
+main{padding-block:44px 80px;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px));min-width:0}
+.chapter{max-width:780px;margin:0 auto}
+.chapter:not(.pager){animation:rise .38s cubic-bezier(.2,.7,.2,1)}
+@keyframes rise{from{opacity:.4;transform:translateY(10px)}to{opacity:1;transform:none}}
+.eyebrow{display:inline-block;padding:3px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;letter-spacing:-.015em;line-height:1.15}
+h1{font-size:clamp(30px,4.2vw,44px);margin:.25em 0 .35em;font-weight:700;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;padding-bottom:.08em}
+h2{font-size:24px;font-weight:700;position:relative;padding-top:.95em;margin:2.2em 0 .5em}
+h2::before{content:"";position:absolute;top:0;left:0;width:46px;height:3px;border-radius:3px;background:var(--grad)}
+h3{font-size:18.5px;margin:1.6em 0 .4em;font-weight:700}
+.lede{font-size:19px;color:var(--muted);margin-top:0}
+p,li{max-width:68ch}
+ul,ol{padding-left:1.3em}
+li{margin:.25em 0}
+code{font-family:var(--f-mono);font-size:.84em;background:var(--code);padding:.08em .35em;border-radius:4px}
+pre{font-family:var(--f-mono);font-size:13px;line-height:1.55;background:var(--code);padding:14px 16px;border-radius:8px;overflow-x:auto;border:1px solid var(--line);box-shadow:var(--shadow)}
+pre code{background:none;padding:0;font-size:inherit}
+.math{overflow-x:auto;overflow-y:hidden;padding:4px 0}
+mjx-container[display="true"]{margin:.8em 0!important}
+.tbl{overflow-x:auto;margin:1em 0;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:var(--shadow)}
+table{border-collapse:collapse;width:100%;font-family:var(--f-ui);font-size:14.5px;line-height:1.45}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;background:var(--code)}
+tr:last-child td{border-bottom:0}
+tr:hover td{background:var(--code)}
+tr.pick td{background:var(--ok-soft)}
+tr.pick td:first-child{box-shadow:inset 3px 0 0 var(--ok)}
+.num{font-variant-numeric:tabular-nums;font-family:var(--f-mono);font-size:13px}
+.badge{display:inline-block;font:600 10.5px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:999px;vertical-align:middle;margin-left:4px;white-space:nowrap}
+.b-pick{background:var(--ok);color:var(--surface)} .b-alt{background:var(--code);color:var(--muted);border:1px solid var(--line)} .b-prod{background:var(--fused-soft);color:var(--fused)}
+.note{border-left:3px solid var(--dense);background:var(--dense-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:1.2em 0;box-shadow:var(--shadow)}
+.note.amber{border-color:var(--sparse);background:var(--sparse-soft)}
+.note.violet{border-color:var(--fused);background:var(--fused-soft)}
+.note.red{border-color:var(--bad);background:var(--code)}
+.note b:first-child{font-family:var(--f-ui)}
+.note p{margin:.3em 0}
+.why{font-family:var(--f-ui);font-size:15px;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--ok);border-radius:14px;padding:14px 18px;margin:1.6em 0;box-shadow:var(--shadow)}
+.why h4{margin:0 0 6px;font-family:var(--f-display);font-size:13px;letter-spacing:.09em;text-transform:uppercase;color:var(--ok)}
+.why h4::before{content:"✓ "}
+.why ul{margin:0;padding-left:1.1em}
+.why p{margin:.3em 0;max-width:none}
+.dense{color:var(--dense);font-weight:600} .sparse{color:var(--sparse);font-weight:600} .fused{color:var(--fused);font-weight:600}
+.toc{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 4px;font-family:var(--f-ui)}
+.toc a{text-decoration:none;font-size:12.5px;padding:3px 11px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--muted);transition:.15s}
+.toc a:hover{color:var(--dense);border-color:var(--dense)}
+/* flow */
+.flow{font-family:var(--f-ui);font-size:13.5px;display:grid;gap:10px;margin:1.2em 0;overflow-x:auto}
+.lane{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px}
+.lane b{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);width:100%}
+.node{border:1px solid var(--line);background:var(--code);border-radius:6px;padding:5px 9px;white-space:nowrap;transition:.15s}
+.node.d{border-color:var(--dense);background:var(--dense-soft);color:var(--dense)}
+.node.s{border-color:var(--sparse);background:var(--sparse-soft);color:var(--sparse)}
+.node.f{border-color:var(--fused);background:var(--fused-soft);color:var(--fused)}
+.node.k{border-color:var(--ok);background:var(--ok-soft);color:var(--ok)}
+.node.dim{opacity:.35}
+.flow .node[role=button]{cursor:pointer}
+.flow .node[role=button]:hover{transform:translateY(-2px);box-shadow:0 4px 10px -4px rgba(0,0,0,.25)}
+.flow .node.sel{outline:2px solid var(--fused);outline-offset:1px;font-weight:600}
+.arr{color:var(--muted)}
+.flowinfo{font-family:var(--f-ui);font-size:14.5px;background:var(--surface);border:1px dashed var(--line);border-radius:10px;padding:12px 16px;margin:-.2em 0 1.2em;min-height:3.4em;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+/* widgets */
+.widget{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);margin:2.4em 0 1.8em;padding:22px 20px 18px;font-family:var(--f-ui);font-size:14.5px}
+.widget::before{content:"Interactive";position:absolute;top:-11px;left:18px;font:600 10.5px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;background:var(--grad);color:#fff;padding:3px 10px;border-radius:999px}
+.widget h4{margin:0 0 4px;font-family:var(--f-display);font-size:17px}
+.widget .sub{color:var(--muted);margin:0 0 14px;font-size:13.5px;max-width:none}
+.wgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+.ctrl{display:grid;grid-template-columns:130px 1fr 64px;align-items:center;gap:8px;margin:6px 0}
+.ctrl label{font-size:13px;color:var(--muted)}
+.ctrl output{font-family:var(--f-mono);font-size:12.5px;text-align:right}
+input[type=range]{width:100%;accent-color:var(--dense)}
+select{font-family:var(--f-ui);font-size:13.5px;padding:5px;border-radius:6px;border:1px solid var(--line);background:var(--code);color:var(--ink)}
+textarea,input[type=text]{width:100%;font-family:var(--f-mono);font-size:12.5px;line-height:1.5;background:var(--code);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px}
+textarea{min-height:300px;resize:vertical}
+.readout{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.readout.r4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.readout div{background:var(--code);border-radius:8px;padding:8px 10px}
+.readout span{display:block;font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.readout strong{font-family:var(--f-mono);font-size:16px;font-variant-numeric:tabular-nums}
+.btn{font-family:var(--f-ui);font-size:13.5px;border:1px solid var(--line);background:var(--code);color:var(--ink);border-radius:7px;padding:6px 12px;cursor:pointer}
+.btn:hover{border-color:var(--dense)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.chip{font:500 13px var(--f-ui);border:1px solid var(--line);background:var(--code);color:var(--ink);border-radius:999px;padding:5px 13px;cursor:pointer;transition:.15s}
+.chip:hover{border-color:var(--dense)}
+.chip[aria-selected="true"]{background:var(--dense);border-color:var(--dense);color:#fff}
+.chunks{display:grid;gap:8px;max-height:560px;overflow-y:auto;padding-right:4px}
+.ck{border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:var(--bg)}
+.ck.hit{border-color:var(--ok)}
+.ck .hd{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;flex-wrap:wrap}
+.ck .path{color:var(--dense);font-weight:600;min-width:0;overflow-wrap:anywhere}
+.ck .meta{font-family:var(--f-mono);color:var(--muted);white-space:nowrap}
+.ck pre{margin:4px 0 0;padding:8px;font-size:11.5px;max-height:150px;overflow:auto;white-space:pre-wrap;box-shadow:none}
+.ck .flags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.flag{font:600 10.5px var(--f-mono);padding:2px 7px;border-radius:999px;background:var(--code);color:var(--muted)}
+.flag.y{background:var(--ok-soft);color:var(--ok)} .flag.n{background:var(--sparse-soft);color:var(--sparse)}
+.chain{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0 12px}
+.st{font:500 12.5px var(--f-ui);padding:4px 11px;border-radius:999px;border:1px solid var(--line);background:var(--code);color:var(--muted)}
+.st.cur{background:var(--dense);border-color:var(--dense);color:#fff}
+.st.ok{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.st.warn{background:var(--sparse-soft);border-color:var(--sparse);color:var(--sparse)}
+.fnote{background:var(--code);border-radius:8px;padding:10px 14px;margin:10px 0;min-height:3em;font-size:13.5px}
+.checks{display:grid;gap:4px;margin:6px 0 12px}
+.checks label{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}
+.checks input{accent-color:var(--dense);width:16px;height:16px}
+.srow{display:grid;grid-template-columns:minmax(0,1fr) 130px 60px;gap:8px;align-items:center;font-size:13px;padding:5px 0;border-bottom:1px solid var(--line)}
+.srow .t{font-family:var(--f-mono);overflow-wrap:anywhere}
+.srow .v{font-family:var(--f-mono);text-align:right;color:var(--muted)}
+.toks{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 12px}
+.tk{font:12px var(--f-mono);padding:2px 7px;border-radius:5px;background:var(--code);border:1px solid var(--line)}
+.tk.lost{background:var(--sparse-soft);border-color:var(--sparse);color:var(--sparse)}
+.tk.kept{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.brow{display:grid;grid-template-columns:150px minmax(0,1fr) 92px;gap:10px;align-items:center;margin:6px 0;font-size:13px}
+.brow .v{font-family:var(--f-mono);font-size:12.5px;text-align:right}
+.track{height:14px;border-radius:7px;background:var(--code);overflow:hidden}
+.track i{display:block;height:100%;border-radius:7px;background:var(--dense);transition:width .45s cubic-bezier(.2,.7,.2,1)}
+.track i.s{background:var(--sparse)} .track i.f{background:var(--fused)} .track i.k{background:var(--ok)}
+.svgbox{overflow-x:auto;background:var(--code);border-radius:10px;padding:8px}
+.svgbox svg{display:block;width:100%;height:auto;min-width:460px}
+.svgbox text{font-family:var(--f-mono);font-size:11px;fill:var(--muted)}
+.svgbox .lbl{fill:var(--ink);font-size:11.5px}
+.f-dense{fill:var(--dense)} .f-sparse{fill:var(--sparse)} .f-fused{fill:var(--fused)} .f-ok{fill:var(--ok)} .f-line{fill:var(--line)} .f-muted{fill:var(--muted)}
+.s-ink{stroke:var(--ink)} .s-fused{stroke:var(--fused)} .s-line{stroke:var(--line)} .s-sparse{stroke:var(--sparse)} .s-dense{stroke:var(--dense)}
+.legendline{display:flex;gap:14px;flex-wrap:wrap;font:12.5px var(--f-ui);color:var(--muted);margin:6px 0 2px}
+.legendline i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px}
+.herostats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:20px 0 6px;font-family:var(--f-ui)}
+.herostats div{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow)}
+.herostats strong{display:block;font:700 26px var(--f-display);background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.herostats span{font-size:12.5px;color:var(--muted)}
+.compare{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:1em 0;font-family:var(--f-ui);font-size:14px}
+.compare>div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow);min-width:0}
+.compare b.h{display:block;font:600 11px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.compare pre{font-size:11.5px;margin:6px 0 0;box-shadow:none;white-space:pre-wrap}
+.compare .good{border-color:var(--ok)} .compare .bad{border-color:var(--bad)}
+.er{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:1em 0;font-family:var(--f-mono);font-size:12px}
+.er>div{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)}
+.er b{display:block;background:var(--fused-soft);color:var(--fused);padding:6px 10px;font-family:var(--f-ui);font-size:13px}
+.er ul{list-style:none;margin:0;padding:6px 10px}
+.er li{margin:2px 0;max-width:none}
+.er li.pk{color:var(--fused);font-weight:600}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:56px;padding-top:20px;border-top:1px solid var(--line);font-family:var(--f-ui)}
+.pager button{all:unset;cursor:pointer;display:grid;gap:2px;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--surface);max-width:48%;box-sizing:border-box;transition:.15s}
+.pager button:hover{border-color:var(--dense);transform:translateY(-2px);box-shadow:var(--shadow)}
+.pager button:focus-visible{outline:2px solid var(--dense)}
+.pager small{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+.pager .nx{text-align:right;margin-left:auto}
+.checklist{padding-left:0}
+.checklist li{list-style:none;position:relative;cursor:pointer;padding:6px 8px 6px 2em;border-radius:8px;margin:2px 0;transition:background .15s;max-width:none}
+.checklist li:hover{background:var(--code)}
+.checklist li::before{content:"";position:absolute;left:.55em;top:.75em;width:.85em;height:.85em;border:1.5px solid var(--ok);border-radius:3px}
+.checklist li.done{color:var(--muted);text-decoration:line-through}
+.checklist li.done::before{background:var(--ok);box-shadow:inset 0 0 0 2px var(--surface)}
+.cprog{display:flex;align-items:center;gap:12px;font:600 13px var(--f-ui);margin:10px 0}
+.cprog .track{flex:1}
+dl.gloss{display:grid;grid-template-columns:minmax(120px,200px) minmax(0,1fr);gap:6px 16px;font-size:15.5px}
+dl.gloss dt{font-family:var(--f-ui);font-weight:600}
+dl.gloss dd{margin:0;color:var(--muted)}
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .rail{display:none}
+  .mbar{display:flex;gap:8px;align-items:center;position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line);
+    padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));font-family:var(--f-ui)}
+  body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+  .mbar strong{font-family:var(--f-display);white-space:nowrap}
+  .mbar select{flex:1;min-width:0}
+  .mbar .tbtn{white-space:nowrap}
+  main{padding-block:24px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .wgrid,.compare{grid-template-columns:minmax(0,1fr)}
+  .er{grid-template-columns:minmax(0,1fr)}
+  .herostats,.readout.r4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .brow{grid-template-columns:96px minmax(0,1fr) 80px}
+  .ctrl{grid-template-columns:100px 1fr 56px}
+  body{font-size:16px}
+  dl.gloss{grid-template-columns:minmax(0,1fr)}
+  dl.gloss dd{margin-bottom:8px}
+}
+@media (prefers-reduced-motion: reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+</style>
+
+<div id="prog"></div>
+<div class="mbar"><strong>Indexing Guide</strong><label for="mnav" hidden>Chapter</label><select id="mnav" aria-label="Chapter"></select><button class="tbtn" type="button" aria-label="Toggle theme"></button></div>
+<div class="shell">
+<nav class="rail" aria-label="Chapters">
+  <div class="brand">Resume Indexing<small>Phase 1 · AI interview assistant</small></div>
+  <div class="legend"><span class="tag t-ok">chosen</span><span class="tag t-dense">dense</span><span class="tag t-sparse">keyword</span><span class="tag t-fused">metadata</span></div>
+  <button class="tbtn" type="button" aria-label="Toggle theme"></button>
+  <div id="railnav"></div>
+</nav>
+<main id="main">
+
+<!-- ================================================================ 1 -->
+<article class="chapter" id="map" data-group="Foundations" data-title="The Phase 1 map">
+<div class="eyebrow">Chapter 1 · Foundations</div>
+<h1>The Phase 1 map</h1>
+<p class="lede">Indexing turns a pile of resume PDFs into three searchable stores: vectors for meaning, a keyword index for exact skills, and a metadata database for facts. Everything the interviewer later asks is answered from these three.</p>
+<div class="herostats"><div><strong>16</strong><span>chapters, one decision each</span></div><div><strong>9</strong><span>interactive visualizers</span></div><div><strong>3</strong><span>stores: dense, keyword, metadata</span></div><div><strong>← →</strong><span>arrow keys flip chapters</span></div></div>
+
+<h2>What we are building</h2>
+<p>An interviewer opens a role ("Senior Backend Engineer, Payments"), sees 60 submitted resumes, and asks questions like <i>"Who has run Kubernetes in production?"</i>, <i>"Summarise Arjun's payments experience"</i> or <i>"Which candidates have more than 5 years of Go?"</i>. The assistant answers with citations to the exact resume lines.</p>
+<p>Phase 1 is everything that happens <b>before</b> any question is asked. It runs when resumes are uploaded. Its job is to make every fact in every resume findable, attributable to one candidate, and citable.</p>
+
+<div class="flow" role="img" aria-label="Phase 1 indexing pipeline">
+  <div class="lane"><b>Phase 1 · indexing pipeline (click a step)</b>
+    <span class="node" role="button" tabindex="0" data-ch="intake" data-info="Accept PDFs/DOCX for a role, hash each file, skip duplicates, store the raw file.">Upload</span><span class="arr">→</span>
+    <span class="node" role="button" tabindex="0" data-ch="parsing" data-info="Extract text in the right reading order. Route digital PDFs, scanned PDFs and complex layouts to different parsers.">Parse / OCR</span><span class="arr">→</span>
+    <span class="node" role="button" tabindex="0" data-ch="format" data-info="Choose the intermediate representation: Markdown for structure, a JSON profile for facts.">Markdown + JSON</span><span class="arr">→</span>
+    <span class="node" role="button" tabindex="0" data-ch="sections" data-info="Map headings like 'Work History' and 'Employment' onto one canonical label: experience.">Sections</span><span class="arr">→</span>
+    <span class="node f" role="button" tabindex="0" data-ch="metadata" data-info="Extract name, total years, skills, companies and dates as structured fields.">Metadata</span><span class="arr">→</span>
+    <span class="node" role="button" tabindex="0" data-ch="chunking" data-info="Split into retrievable units: one chunk per section, one per job entry in Experience.">Chunk</span><span class="arr">→</span>
+    <span class="node" role="button" tabindex="0" data-ch="adaptive" data-info="Compute min/max chunk tokens once from statistics of all uploaded resumes.">Adaptive budgets</span><span class="arr">→</span>
+    <span class="node" role="button" tabindex="0" data-ch="enrich" data-info="Prepend 'Candidate | Section > Entry' context so every chunk stands alone.">Enrich</span><span class="arr">→</span>
+    <span class="node d" role="button" tabindex="0" data-ch="embed" data-info="Turn each chunk into a vector with an open-source embedding model.">Embed</span><span class="arr">→</span>
+    <span class="node d" role="button" tabindex="0" data-ch="storage" data-info="Vector store: FAISS or Chroma now, pgvector or OpenSearch in prod.">Vector index</span>
+    <span class="node s" role="button" tabindex="0" data-ch="keyword" data-info="BM25 with a tech-aware tokenizer so C++, C# and .NET survive.">BM25 index</span>
+    <span class="node f" role="button" tabindex="0" data-ch="storage" data-info="SQLite (Postgres in prod): candidates, experiences, skills, chunks.">Metadata DB</span>
+  </div>
+  <div class="lane"><b>Around the pipeline</b>
+    <span class="node" role="button" tabindex="0" data-ch="ops" data-info="Idempotency, index versioning, deletion, provider interfaces, config.">Ops &amp; interfaces</span>
+    <span class="node k" role="button" tabindex="0" data-ch="exit" data-info="Checks that Phase 1 output is good enough before Phase 2 starts.">Quality gates</span>
+    <span class="node k" role="button" tabindex="0" data-ch="decisions" data-info="One table of every decision, its alternatives, and when to switch.">Decision record</span>
+  </div>
+</div>
+<div class="flowinfo" id="flowInfo"><span id="flowTxt">Click any step above to see what it does, then jump to its chapter.</span><button class="btn" id="flowGo" type="button" hidden>Open chapter →</button></div>
+
+<h2>The contract Phase 1 hands to Phase 2</h2>
+<p>Phase 2 (retrieval) will not care which parser or chunker you used. It only needs these outputs, with these guarantees. Fix this contract early and you can change everything behind it later.</p>
+<div class="tbl"><table>
+<tr><th>Output</th><th>Contents</th><th>Guarantee</th></tr>
+<tr><td><span class="dense">Vector index</span></td><td>One vector per chunk, keyed by <code>chunk_id</code></td><td>All vectors from one model and version; normalised</td></tr>
+<tr><td><span class="sparse">Keyword index</span></td><td>BM25 over the same chunks</td><td>Same <code>chunk_id</code>s as the vector index</td></tr>
+<tr><td><span class="fused">Metadata DB</span></td><td>roles, candidates, experiences, skills, chunks (text + fields)</td><td>Every chunk maps to exactly one candidate and one role</td></tr>
+<tr><td>Index manifest</td><td>Parser, chunker config, embedding model, created time</td><td>Phase 2 refuses to query with a different embedding model</td></tr>
+</table></div>
+
+<h2>Why most of the effort is here</h2>
+<p>If the right passage never reaches the LLM, nothing in Phase 2 can recover it. For resumes this is especially sharp. Resumes are short, dense, visually designed documents. A two-column template parsed in the wrong reading order mixes skills from the sidebar into job descriptions. A chunk that says "Led migration of 40 services to EKS" without the company name cannot answer "where did they do that?". Most of the quality of the final assistant is decided in this phase.</p>
+
+<h2>How to read this guide</h2>
+<ol>
+<li>Chapter 2 describes the corpus and the questions interviewers ask. Every later choice refers back to it.</li>
+<li>Chapters 3 to 13 follow the pipeline. Each lists <b>all the main methods</b>, shows a resume example for each, marks the one we pick with <span class="badge b-pick">chosen</span>, and says when you would switch.</li>
+<li>Chapter 14 covers engineering: idempotency, versioning, the provider interfaces that make free-to-paid swaps a config change.</li>
+<li>Chapter 15 lists the quality gates and exit criteria for Phase 1. Chapter 16 is the full decision record.</li>
+</ol>
+<p>The running example throughout is one fictional resume for <b>Arjun Mehta</b>, a senior backend engineer. You can edit it inside several of the visualizers.</p>
+</article>
+
+<!-- ================================================================ 2 -->
+<article class="chapter" id="corpus" data-group="Foundations" data-title="Know your corpus" hidden>
+<div class="eyebrow">Chapter 2 · Foundations</div>
+<h1>Know your corpus and your questions</h1>
+<p class="lede">The right indexing design comes from two facts: what resumes look like, and what interviewers ask of them. Get these straight and most decisions make themselves.</p>
+
+<h2>What resumes look like</h2>
+<div class="tbl"><table>
+<tr><th>Property</th><th>Typical value</th><th>Consequence for indexing</th></tr>
+<tr><td>Length</td><td class="num">1–3 pages, 400–1,500 tokens</td><td>A whole resume nearly fits in one embedding window, but one vector for all of it is too blurred to match specific skills</td></tr>
+<tr><td>Structure</td><td>Strong, conventional sections: Summary, Skills, Experience, Education, Projects, Certifications</td><td>Section-aware chunking is natural and free</td></tr>
+<tr><td>Heading names</td><td>Vary widely: "Work History", "Employment", "Professional Experience"</td><td>Need a synonym map to canonical section names</td></tr>
+<tr><td>Layout</td><td>Templates with two columns, sidebars, tables, icons, skill bars</td><td>Naive text extraction scrambles reading order; parsing is the riskiest step</td></tr>
+<tr><td>Vocabulary</td><td>Keyword-dense: tool and product names, acronyms (K8s, EKS, CKA)</td><td>Exact keyword search (BM25) matters as much as semantic search</td></tr>
+<tr><td>Facts</td><td>Dates, companies, titles, degrees, certifications</td><td>Many questions are structured filters, not semantic search</td></tr>
+<tr><td>Personal data</td><td>Name, email, phone, address, sometimes photo and age</td><td>PII handling and bias controls are required, not optional</td></tr>
+<tr><td>Volume</td><td class="num">10–500 resumes per role</td><td>Tiny for a vector index: exact (flat) search is fast enough</td></tr>
+</table></div>
+
+<h2>What interviewers ask</h2>
+<p>Classify the questions first. Different question types need different stores, which is why Phase 1 builds three of them.</p>
+<div class="tbl"><table>
+<tr><th>Question type</th><th>Example</th><th>Best served by</th></tr>
+<tr><td>Skill lookup</td><td>"Who knows Terraform?"</td><td><span class="sparse">BM25</span> + skill table</td></tr>
+<tr><td>Experience depth</td><td>"Who has led a large migration to Kubernetes?"</td><td><span class="dense">Dense vectors</span> over experience entries</td></tr>
+<tr><td>Structured filter</td><td>"Candidates with 5+ years and a CKA"</td><td><span class="fused">Metadata DB</span> (SQL), no vectors at all</td></tr>
+<tr><td>Single-candidate summary</td><td>"Summarise Arjun's payments work"</td><td>Metadata filter on candidate, then all their chunks</td></tr>
+<tr><td>Comparison</td><td>"Compare the top three on system design"</td><td>Retrieval per candidate, then aggregate (Phase 2)</td></tr>
+<tr><td>Gaps and red flags</td><td>"Any unexplained career gaps?"</td><td>Experience date table (computed at indexing time)</td></tr>
+<tr><td>Interview prep</td><td>"Suggest questions to probe her Kafka claim"</td><td>Dense retrieval of the specific claim + LLM</td></tr>
+</table></div>
+
+<div class="note violet"><b>Key insight.</b><p>Roughly half of interviewer questions are about facts that can be extracted once and stored as fields: years of experience, skills, certifications, companies, dates. Answering those with vector search is slower and less reliable than a SQL filter. That is why metadata extraction (chapter 7) gets as much attention as embeddings.</p></div>
+
+<h2>Corpus scope: per role</h2>
+<p>Every resume belongs to a <b>role</b> (a job opening). Interviewers almost always search within one role. Two designs are possible:</p>
+<ul>
+<li><b>One index per role.</b> Simple isolation; but a candidate who applies to two roles is indexed twice, and cross-role search ("anyone in our pool with Rust?") needs fan-out.</li>
+<li><b>One shared index, <code>role_id</code> as a metadata filter</b> <span class="badge b-pick">chosen</span>. One copy of each resume, filter at query time, cross-role search is free. Requires the vector store to support metadata filtering, which every option in chapter 13 does.</li>
+</ul>
+
+<div class="why"><h4>What this means for Phase 1</h4><ul>
+<li>Parse carefully: layout is the main risk.</li>
+<li>Keep structure: sections and job entries are the natural chunk units.</li>
+<li>Extract facts into fields, not only into vectors.</li>
+<li>Build BM25 next to dense vectors from day one.</li>
+<li>Scale is small: favour simplicity and exactness over approximate indexes.</li>
+</ul></div>
+</article>
+
+<!-- ================================================================ 3 -->
+<article class="chapter" id="intake" data-group="Ingestion" data-title="Upload &amp; intake" hidden>
+<div class="eyebrow">Chapter 3 · Ingestion</div>
+<h1>Upload and intake</h1>
+<p class="lede">Intake is unglamorous, but it decides whether re-uploads create duplicates, whether a crash loses work, and whether you can delete a candidate's data on request.</p>
+
+<h2>What happens on upload</h2>
+<ol>
+<li><b>Validate</b>: file type by magic bytes (not just the extension), size limit (for example 10 MB), page limit (for example 10 pages), reject encrypted PDFs with a clear message.</li>
+<li><b>Hash</b>: <code>sha256</code> of the raw bytes. If this hash already exists for this role, skip; the file is already indexed.</li>
+<li><b>Store the raw file</b> under <code>data/raw/{role_id}/{sha256}.pdf</code>. You will re-parse it whenever the parser improves.</li>
+<li><b>Create a document record</b> with status <code>uploaded</code>, then move it through <code>parsed → chunked → embedded → indexed</code> or <code>failed</code> with an error message.</li>
+</ol>
+
+<h2>Methods for running the pipeline</h2>
+<div class="tbl"><table>
+<tr><th>Method</th><th>How</th><th>Good for</th><th>Weak at</th></tr>
+<tr><td>Synchronous in the request</td><td>Upload endpoint parses, chunks and embeds before responding</td><td>Demos, one file at a time</td><td>A 60-resume batch blocks for minutes; a crash loses the batch</td></tr>
+<tr class="pick"><td>Background job + status table <span class="badge b-pick">chosen</span></td><td>Endpoint stores files and returns; a worker thread or process picks up <code>uploaded</code> documents</td><td>Batches, retries, progress bars</td><td>Slightly more code</td></tr>
+<tr><td>Task queue (Celery / RQ / Dramatiq + Redis)</td><td>Each document is a queued task, workers scale horizontally</td><td>Production, many concurrent uploads</td><td>Extra infrastructure</td></tr>
+<tr><td>Managed pipeline (cloud functions, Step Functions)</td><td>Event on file upload to object storage triggers processing</td><td>Large-scale production</td><td>Vendor lock-in, harder local testing</td></tr>
+</table></div>
+<p>The status table is the same in all four, so you can start with a simple background worker and move to a task queue later without changing the data model.</p>
+
+<h2>Duplicates are subtler than they look</h2>
+<div class="tbl"><table>
+<tr><th>Case</th><th>Detect with</th><th>Action</th></tr>
+<tr><td>Same file uploaded twice</td><td>Identical <code>sha256</code></td><td>Skip silently</td></tr>
+<tr><td>Same candidate, re-exported PDF (bytes differ)</td><td>Hash of normalised extracted text</td><td>Skip, link to existing</td></tr>
+<tr><td>Same candidate, updated resume</td><td>Same email or phone in extracted metadata</td><td>Keep newest as active version, archive the old one</td></tr>
+<tr><td>Near-identical resumes from different people (templates, agencies)</td><td>MinHash / Jaccard on shingles above ~0.9</td><td>Flag for review, never auto-merge</td></tr>
+</table></div>
+
+<h2>Multiple files per candidate</h2>
+<p>Some candidates submit a resume plus a cover letter or portfolio. Model this as <code>candidate 1 → n documents</code>, each with a <code>doc_type</code>. Chunks carry both <code>candidate_id</code> and <code>doc_id</code>. Retrieval can then weight resume chunks above cover-letter chunks, and citations name the right file.</p>
+
+<div class="note amber"><b>Personal data from the first byte.</b><p>Resumes are personal data under GDPR and India's DPDP Act 2023. Decide now: retention period (for example delete 6 months after the role closes), who can see raw files, and a delete path that removes the raw file, the DB rows, the vectors and the BM25 entries together (chapter 14).</p></div>
+
+<div class="why"><h4>Chosen for this use case</h4><ul>
+<li>Upload endpoint validates, hashes, stores, returns immediately.</li>
+<li>Background worker processes documents through a status table; failed documents keep their error and can be retried.</li>
+<li>Duplicate check on raw hash and normalised-text hash; same-candidate detection by email after metadata extraction.</li>
+<li>Switch to Celery/RQ when more than one worker process is needed.</li>
+</ul></div>
+</article>
+
+<!-- ================================================================ 4 -->
+<article class="chapter" id="parsing" data-group="Ingestion" data-title="Parsing PDFs" hidden>
+<div class="eyebrow">Chapter 4 · Ingestion</div>
+<h1>Parsing PDFs: libraries, OCR and vision models</h1>
+<p class="lede">A PDF is a set of glyphs placed at coordinates, not a document with paragraphs. Parsing reconstructs reading order and structure. For resumes, with their designed layouts, this is the step most likely to go wrong silently.</p>
+
+<h2>The four kinds of resume PDF</h2>
+<div class="tbl"><table>
+<tr><th>Kind</th><th>How to recognise it</th><th>Main risk</th></tr>
+<tr><td>Digital, single column</td><td>Text layer present, text spans full page width</td><td>Low: headers and bullets</td></tr>
+<tr><td>Digital, two column / sidebar</td><td>Text layer present, two clusters of x-coordinates</td><td>Reading order: sidebar text interleaved with main column</td></tr>
+<tr><td>Scanned or image-only</td><td>No text layer, or fewer than ~50 characters per page</td><td>Needs OCR; errors in dates and numbers</td></tr>
+<tr><td>Designed (Canva, infographic)</td><td>Icons, skill bars, text inside shapes</td><td>Information exists only visually (a 4/5 skill bar has no text)</td></tr>
+</table></div>
+
+<h2>What goes wrong: a two-column example</h2>
+<div class="compare">
+<div class="bad"><b class="h">Naive extraction (line by line across the page)</b>
+<pre>SKILLS            Senior Backend Engineer, PayNova
+Go, Python        Led migration of 40 microservices
+Kubernetes        from EC2 to EKS, cutting infra
+Terraform         cost by 32%.</pre>
+<p style="font-size:13px;margin:.4em 0 0">Becomes: "SKILLS Senior Backend Engineer, PayNova Go, Python Led migration of 40 microservices Kubernetes from EC2 to EKS…". Skills and job text are fused; section detection fails.</p></div>
+<div class="good"><b class="h">Layout-aware extraction</b>
+<pre>## Skills
+Go, Python, Kubernetes, Terraform
+
+## Experience
+### Senior Backend Engineer, PayNova
+- Led migration of 40 microservices
+  from EC2 to EKS, cutting infra
+  cost by 32%.</pre></div>
+</div>
+
+<h2>Every method, compared</h2>
+<h3>1. Plain text extractors</h3>
+<p>Read the text layer in content-stream order. <code>pypdf</code>, <code>pdfminer.six</code>. Fast and dependency-light, but reading order follows how the PDF was written, which for designed templates is often wrong. No structure: headings come out as plain lines.</p>
+<h3>2. Layout-aware libraries</h3>
+<p>Use glyph coordinates, font sizes and blocks. <code>PyMuPDF</code> (fitz) gives blocks with bounding boxes and font info; <code>pymupdf4llm</code> turns that into Markdown, inferring headings from font size and handling multi-column pages reasonably. <code>pdfplumber</code> gives character-level access and strong table extraction. Fast (milliseconds per page), CPU-only, no models.</p>
+<h3>3. ML document converters</h3>
+<p>Run a layout-detection model over each page image to find titles, paragraphs, tables, lists and columns, then assemble text in reading order. <b>Docling</b> (IBM, MIT licence) with its layout model and TableFormer, exporting Markdown or JSON; <b>Marker</b> (check its licence for commercial use); <b>MinerU</b>; <b>Unstructured</b> (<code>hi_res</code> strategy). Much better on two-column and table layouts; seconds per page on CPU.</p>
+<h3>4. OCR engines</h3>
+<p>For scanned or image-only pages: <b>Tesseract</b> (classic, CPU, good on clean scans), <b>EasyOCR</b>, <b>PaddleOCR</b>, <b>docTR</b>, <b>RapidOCR</b>. Docling and Unstructured can call these for you. OCR produces text without structure, so it is usually wrapped inside a layout pipeline.</p>
+<h3>5. Vision-language models (VLM)</h3>
+<p>Give the page image to a multimodal model and ask for Markdown. Open source: <b>Qwen2.5-VL</b> (available in Ollama), <b>olmOCR</b>, <b>granite-docling</b>/<b>SmolDocling</b> (small document-specific models). They read designed layouts, icons and skill bars the way a human does. Costs: GPU or slow CPU inference, and hallucination risk: a VLM can "correct" a date or invent a word. Use as a fallback, not the default.</p>
+<h3>6. Paid parsing APIs</h3>
+<p>General: Azure AI Document Intelligence, AWS Textract, Google Document AI, LlamaParse, Reducto, Mistral OCR. Resume-specific parsers: Affinda, Textkernel, RChilli. Resume parsers return structured JSON directly (name, jobs, skills), which also covers chapter 7. They cost per page and send candidate PII to a third party, which needs a data processing agreement.</p>
+
+<div class="tbl"><table>
+<tr><th>Method</th><th>Example tools</th><th>2-column</th><th>Scans</th><th>Speed / page (CPU)</th><th>Structure out</th></tr>
+<tr><td>Plain text</td><td>pypdf, pdfminer</td><td>Poor</td><td>No</td><td class="num">~5 ms</td><td>None</td></tr>
+<tr class="pick"><td>Layout-aware <span class="badge b-pick">primary</span></td><td>pymupdf4llm, pdfplumber</td><td>Fair–good</td><td>No</td><td class="num">~20 ms</td><td>Headings, lists</td></tr>
+<tr class="pick"><td>ML converter <span class="badge b-pick">fallback</span></td><td>Docling, Marker, MinerU</td><td>Good</td><td>With OCR</td><td class="num">1–5 s</td><td>Headings, tables, reading order</td></tr>
+<tr><td>OCR engine</td><td>Tesseract, PaddleOCR</td><td>Weak alone</td><td>Yes</td><td class="num">1–3 s</td><td>Lines only</td></tr>
+<tr><td>VLM</td><td>Qwen2.5-VL, olmOCR</td><td>Very good</td><td>Yes</td><td class="num">10–60 s (GPU: 1–5 s)</td><td>Markdown</td></tr>
+<tr><td>Paid API <span class="badge b-prod">prod option</span></td><td>Azure DI, LlamaParse, Affinda</td><td>Very good</td><td>Yes</td><td class="num">network-bound</td><td>Markdown or resume JSON</td></tr>
+</table></div>
+<p style="font-size:14px;color:var(--muted)">Speeds are rough orders of magnitude for a laptop CPU; measure on your own files.</p>
+
+<h2>Routing: use the cheap parser when it is safe</h2>
+<p>No single parser is best for every file. A <b>router</b> inspects each PDF cheaply and sends it to the right parser, then checks the result and escalates if it looks bad.</p>
+<pre><code>inspect(pdf):
+    chars_per_page   = len(text_layer) / pages
+    columns          = cluster x-start of text blocks (1 or 2 clusters)
+    image_coverage   = image area / page area
+route:
+    docx                          → Docling (or python-docx)  → Markdown
+    chars_per_page &lt; 50           → Docling + OCR (Tesseract / RapidOCR)
+    columns == 2 or has tables    → Docling layout model
+    otherwise                     → pymupdf4llm (fast path)
+validate(markdown):
+    sections_found &lt; 3  or  garbage_ratio &gt; 5%  or  ocr_conf &lt; 0.7
+        → escalate one level (pymupdf4llm → Docling → VLM)
+        → still bad: mark document "needs_review", never index silently</code></pre>
+
+<div class="widget" id="w-route">
+  <h4>Parser router</h4>
+  <p class="sub">Tick what describes a resume file. The router picks a parser path and explains why.</p>
+  <div class="wgrid">
+    <div class="checks" id="routeChecks">
+      <label><input type="checkbox" id="rDocx"> It is a DOCX file</label>
+      <label><input type="checkbox" id="rScan"> Scanned / image-only (no text layer)</label>
+      <label><input type="checkbox" id="rCols" checked> Two columns or a sidebar</label>
+      <label><input type="checkbox" id="rTables"> Tables or skill grids</label>
+      <label><input type="checkbox" id="rGfx"> Skill bars, icons, text in shapes</label>
+      <label><input type="checkbox" id="rGpu"> A GPU is available</label>
+    </div>
+    <div style="min-width:0">
+      <div class="chain" id="routeChain"></div>
+      <div class="fnote" id="routeNote"></div>
+      <div class="readout"><div><span>est. time / page</span><strong id="routeTime"></strong></div><div><span>risk</span><strong id="routeRisk"></strong></div></div>
+    </div>
+  </div>
+</div>
+
+<h2>Cleaning after parsing</h2>
+<ul>
+<li>Unicode NFKC normalisation; replace ligatures (ﬁ → fi) and smart quotes.</li>
+<li>Normalise bullets (•, ▪, ➢, –) to <code>- </code>.</li>
+<li>Re-join hyphenated line breaks ("micro-\nservices" → "microservices").</li>
+<li>Drop page headers and footers repeated on every page ("Page 2 of 2", the name repeated at the top).</li>
+<li>Keep the page number of each block for citations.</li>
+</ul>
+
+<div class="why"><h4>Chosen for this use case</h4><ul>
+<li><b>pymupdf4llm</b> as the fast default: most resumes are digital PDFs.</li>
+<li><b>Docling</b> for two-column, table-heavy, DOCX and scanned files (with Tesseract or RapidOCR inside).</li>
+<li><b>Qwen2.5-VL via Ollama</b> as an optional last-resort fallback for designed resumes, behind a flag.</li>
+<li>Validation after every parse; failures go to "needs review", never into the index.</li>
+<li>Prod swap: the same <code>DocumentParser</code> interface can call Azure Document Intelligence or a resume-parsing API.</li>
+</ul></div>
+</article>
+
+<!-- ================================================================ 5 -->
+<article class="chapter" id="format" data-group="Ingestion" data-title="Intermediate format" hidden>
+<div class="eyebrow">Chapter 5 · Ingestion</div>
+<h1>The intermediate format: Markdown, JSON, or vectorise directly?</h1>
+<p class="lede">Your sketch asked whether there is a better format than Markdown, or whether to skip formats and vectorise directly. There are five real options. For resumes the answer is to keep two representations side by side.</p>
+
+<h2>The options</h2>
+<div class="tbl"><table>
+<tr><th>Format</th><th>What it keeps</th><th>Strength</th><th>Weakness</th></tr>
+<tr><td>Plain text</td><td>Words only</td><td>Simplest</td><td>Loses headings, lists, tables; section detection has to guess</td></tr>
+<tr class="pick"><td>Markdown <span class="badge b-pick">chosen</span></td><td>Headings, lists, tables, emphasis</td><td>Human-readable, LLM-friendly, structure is explicit, one chunker for all sources</td><td>Cannot hold typed fields (dates, numbers)</td></tr>
+<tr><td>HTML</td><td>Full structure and styling</td><td>Richest tree</td><td>Verbose; tokens wasted on tags; nobody chunks HTML well</td></tr>
+<tr class="pick"><td>Structured JSON profile <span class="badge b-pick">chosen</span></td><td>Typed fields: jobs[], dates, skills[]</td><td>Enables SQL filters and exact facts; standard schemas exist (JSON Resume)</td><td>Extraction is lossy: free text that does not fit a field is dropped</td></tr>
+<tr><td>Parser-native document model</td><td>e.g. DoclingDocument: elements with types, bounding boxes, pages</td><td>Lossless, has page coordinates for highlighting</td><td>Tied to one parser; heavy</td></tr>
+<tr><td>Direct vectorisation</td><td>Page images or whole-document vectors</td><td>No parsing at all</td><td>No text to show, cite, filter or BM25; see below</td></tr>
+</table></div>
+
+<div class="widget" id="w-format">
+  <h4>One resume, five representations</h4>
+  <p class="sub">The same part of Arjun's resume in each format. Notice what each makes easy and what it loses.</p>
+  <div class="chips" id="fmtChips" role="tablist"></div>
+  <pre id="fmtOut" style="max-height:340px;overflow:auto;white-space:pre-wrap"></pre>
+  <div class="fnote" id="fmtNote"></div>
+</div>
+
+<h2>Direct vectorisation, examined</h2>
+<p>"Skip parsing and vectorise directly" has three concrete versions.</p>
+<ol>
+<li><b>One vector per whole resume.</b> Embed the full text as a single vector. Good for "find resumes similar to this one" or a first-pass ranking against a JD. Bad for questions: one vector averaging Go, payments, mentoring and a degree matches none of them sharply, and you cannot cite a line.</li>
+<li><b>Page-image retrieval (ColPali, ColQwen).</b> A vision model embeds each page image as many patch vectors; queries match against patches. Works on designed layouts without any parsing. But you get back a page image, not text: no BM25, no metadata, and the LLM must read the image again to answer. Strong for visually rich documents like slide decks and brochures; overkill for text-first resumes.</li>
+<li><b>Embedding raw extracted text in fixed windows.</b> This is still parsing, just bad parsing: you inherit the reading-order problems from chapter 4 without fixing them.</li>
+</ol>
+
+<div class="note"><b>Practical use of "direct" vectors.</b><p>Keep a whole-resume vector as an <i>extra</i> representation (a "profile vector" of the summary and skills), useful for JD-to-candidate ranking in Phase 2. It complements section chunks; it does not replace them.</p></div>
+
+<div class="why"><h4>Chosen for this use case</h4><ul>
+<li><b>Markdown</b> is the canonical text: it drives section detection, chunking, BM25 and citations.</li>
+<li>A <b>JSON profile</b> (chapter 7) is extracted from the Markdown and stored in the metadata DB for filters and exact facts.</li>
+<li>Both are saved to disk next to the raw file, so chunking can be re-run without re-parsing.</li>
+<li>Switch to page-image retrieval only if a large share of resumes are designed/infographic and parsing keeps failing.</li>
+</ul></div>
+</article>
+
+<!-- ================================================================ 6 -->
+<article class="chapter" id="sections" data-group="Structure" data-title="Sections &amp; normalisation" hidden>
+<div class="eyebrow">Chapter 6 · Structure</div>
+<h1>Section detection and normalisation</h1>
+<p class="lede">Resumes have a small, well-known set of sections, but candidates name them in dozens of ways. Mapping every heading onto a canonical label makes chunking, filtering and prompts consistent.</p>
+
+<h2>Canonical sections</h2>
+<div class="tbl"><table>
+<tr><th>Canonical</th><th>Common headings seen in the wild</th><th>Used for</th></tr>
+<tr><td><code>contact</code></td><td>(top of page), Contact, Personal Details</td><td>Metadata only; <b>not</b> embedded (PII)</td></tr>
+<tr><td><code>summary</code></td><td>Summary, Profile, About Me, Objective, Career Objective</td><td>Profile vector, quick overview</td></tr>
+<tr><td><code>skills</code></td><td>Skills, Technical Skills, Core Competencies, Tech Stack, Tools</td><td>Skill extraction, BM25</td></tr>
+<tr><td><code>experience</code></td><td>Experience, Work History, Employment, Professional Experience</td><td>Entry-level chunks, dates, YOE</td></tr>
+<tr><td><code>projects</code></td><td>Projects, Key Projects, Personal Projects, Open Source</td><td>Evidence of skills</td></tr>
+<tr><td><code>education</code></td><td>Education, Academic Background, Qualifications</td><td>Degree fields</td></tr>
+<tr><td><code>certifications</code></td><td>Certifications, Licenses, Certificates</td><td>Exact-match filters (CKA, AWS SA)</td></tr>
+<tr><td><code>other</code></td><td>Awards, Publications, Languages, Volunteering, Interests</td><td>Kept, lower weight</td></tr>
+</table></div>
+
+<h2>Methods for detecting sections</h2>
+<div class="tbl"><table>
+<tr><th>Method</th><th>How</th><th>Strength</th><th>Weakness</th></tr>
+<tr class="pick"><td>Markdown headings + synonym dictionary <span class="badge b-pick">chosen</span></td><td>Take <code>#</code> headings from the parser output; map text through a synonym table</td><td>Free, deterministic, explainable</td><td>Depends on the parser detecting headings</td></tr>
+<tr class="pick"><td>Heuristic heading detection <span class="badge b-pick">chosen</span></td><td>Short line, ALL CAPS or bold or larger font, followed by content</td><td>Catches headings the parser missed</td><td>False positives (a candidate's name in caps)</td></tr>
+<tr><td>Fuzzy / embedding match</td><td>Compare unknown headings to canonical labels by string distance or embedding similarity</td><td>Handles typos and creative names ("Where I've Worked")</td><td>Needs a threshold; can mis-map</td></tr>
+<tr><td>Layout model labels</td><td>Docling / LayoutLM tag regions as "section-header"</td><td>Uses visual cues</td><td>Labels headers but does not say which section</td></tr>
+<tr><td>LLM segmentation <span class="badge b-alt">fallback</span></td><td>Ask the LLM to return the resume as JSON <code>{section: text}</code></td><td>Handles anything, including no headings</td><td>Slow, may paraphrase or drop text; must verify output is a substring of input</td></tr>
+<tr><td>Trained sequence labeller</td><td>CRF / BERT token classifier trained on labelled resumes</td><td>Fast and accurate at scale</td><td>Needs a labelled dataset you do not have</td></tr>
+</table></div>
+
+<div class="widget" id="w-sect">
+  <h4>Section detector, live</h4>
+  <p class="sub">Edit the resume. Headings are found by the dictionary plus the ALL-CAPS heuristic and mapped to canonical labels. Rename a heading (try "WHERE I'VE WORKED") to see the fallback trigger.</p>
+  <div class="wgrid">
+    <div><label for="sSrc" hidden>Resume text</label><textarea id="sSrc" spellcheck="false"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" id="sReset" type="button">Reset sample</button></div></div>
+    <div style="min-width:0">
+      <div class="readout"><div><span>sections found</span><strong id="sCount"></strong></div><div><span>unknown headings</span><strong id="sUnk"></strong></div><div><span>tokens in known sections</span><strong id="sCov"></strong></div><div><span>action</span><strong id="sAct"></strong></div></div>
+      <div id="sOut" style="margin-top:12px"></div>
+    </div>
+  </div>
+</div>
+
+<h2>Inside Experience: entries</h2>
+<p>The Experience section is a list of <b>entries</b>, one per job. Each entry has a header line (title, company, location, dates) and bullets. Detect entry headers with a pattern: a non-bullet line containing a date range (<code>Jan 2021 – Present</code>, <code>2018–2020</code>, <code>07/2018 - 12/2020</code>). Entries are the most important retrieval unit in the whole system (chapter 8).</p>
+
+<div class="why"><h4>Chosen for this use case</h4><ul>
+<li>Parser headings + heuristic detection, mapped with a synonym dictionary (kept in config, easy to extend).</li>
+<li>Fuzzy match (string similarity ≥ 0.85) for near-misses.</li>
+<li>LLM fallback only when fewer than 3 known sections are found, with a check that every returned section is verbatim text from the input.</li>
+<li>Experience split into entries by date-range headers.</li>
+</ul></div>
+</article>
+
+<!-- ================================================================ 7 -->
+<article class="chapter" id="metadata" data-group="Structure" data-title="Metadata &amp; entities" hidden>
+<div class="eyebrow">Chapter 7 · Structure</div>
+<h1>Metadata and entity extraction</h1>
+<p class="lede">Turning a resume into fields is what lets the assistant answer "who has 5+ years of Go and a CKA?" with a query instead of a guess.</p>
+
+<h2>What to extract</h2>
+<pre><code>{
+  "candidate": {
+    "name": "Arjun Mehta",              // display only; masked before LLM ranking
+    "email": "arjun.mehta@example.com", // dedupe key; never embedded
+    "location": "Pune, India",
+    "headline": "Senior Backend Engineer",
+    "total_yoe": 7.8,                   // computed, not extracted (see below)
+    "seniority": "senior"
+  },
+  "experiences": [
+    {"title": "Senior Backend Engineer", "company": "PayNova",
+     "start": "2021-01", "end": null, "is_current": true,
+     "skills": ["Go", "Kubernetes", "AWS EKS"], "section_ref": "experience#1"},
+    {"title": "Backend Engineer", "company": "ShipKart",
+     "start": "2018-07", "end": "2020-12", "skills": ["Python", "FastAPI", "Kafka"]}
+  ],
+  "skills": [{"name": "Kubernetes", "source": ["skills", "experience#1"], "years": 5.8}],
+  "education": [{"degree": "B.E.", "field": "Computer Engineering", "year": 2018}],
+  "certifications": [{"name": "Certified Kubernetes Administrator", "year": 2022}]
+}</code></pre>
+
+<h2>Extraction methods</h2>
+<div class="tbl"><table>
+<tr><th>Method</th><th>Good at</th><th>Weak at</th><th>Example</th></tr>
+<tr class="pick"><td>Regex / rules <span class="badge b-pick">for some fields</span></td><td>Email, phone, URLs, dates, GPA</td><td>Names, titles, free text</td><td><code>[\w.+-]+@[\w-]+\.[\w.]+</code></td></tr>
+<tr><td>NER (spaCy, GLiNER)</td><td>Names, organisations, locations</td><td>Job titles, skills; domain words mis-tagged</td><td>"PayNova" → ORG</td></tr>
+<tr class="pick"><td>Skill dictionary / taxonomy <span class="badge b-pick">chosen</span></td><td>Normalising skills to canonical names</td><td>New or niche tools not in the list</td><td>ESCO, O*NET, Lightcast Open Skills; "k8s" → Kubernetes</td></tr>
+<tr class="pick"><td>LLM structured output <span class="badge b-pick">chosen</span></td><td>Everything at once: jobs, titles, which skills each job used</td><td>Slower; can hallucinate fields; needs validation</td><td>Ollama with a JSON schema in <code>format</code></td></tr>
+<tr><td>Commercial resume parser <span class="badge b-prod">prod option</span></td><td>Mature, multilingual, normalised taxonomies</td><td>Cost per resume, data leaves your system</td><td>Affinda, Textkernel, RChilli</td></tr>
+</table></div>
+
+<h3>LLM extraction done safely</h3>
+<ol>
+<li>Define the schema in Pydantic; pass its JSON schema to Ollama's <code>format</code> parameter so the model must return valid JSON.</li>
+<li>Extract per section (Experience entries one at a time), not the whole resume in one call. Smaller inputs mean fewer omissions.</li>
+<li><b>Ground every field</b>: company and title strings must appear in the source text; reject or flag values that do not.</li>
+<li>Never let the LLM compute numbers (total years); compute them in code from extracted dates.</li>
+<li>Temperature 0; store the model name and prompt version with the extracted record.</li>
+</ol>
+
+<h2>Dates and total years of experience</h2>
+<p>Resume dates come in many forms: "Jan 2021 – Present", "2018-2020", "07/2018 to 12/2020", "Summer 2017". Normalise all to <code>YYYY-MM</code>, with "Present" resolved to the indexing date. Total experience is the <b>union</b> of job intervals, not their sum, because jobs overlap (freelancing during a full-time job, notice periods).</p>
+<div class="math">\[\text{YOE} = \frac{1}{12}\Big|\bigcup_{j} [\,s_j,\ e_j\,)\Big|_{\text{months}} \qquad\text{not}\qquad \frac{1}{12}\sum_j (e_j - s_j)\]</div>
+
+<div class="widget" id="w-yoe">
+  <h4>Years of experience: sum vs union</h4>
+  <p class="sub">Arjun's jobs on a timeline (indexing date: Oct 2026). Toggle the internship and an overlapping freelance contract and compare the naive sum with the merged union.</p>
+  <div class="checks" style="grid-template-columns:repeat(2,minmax(0,1fr));display:grid">
+    <label><input type="checkbox" id="yIntern" checked> Include internship</label>
+    <label><input type="checkbox" id="yFree" checked> Include freelance (overlaps)</label>
+  </div>
+  <div class="svgbox"><svg id="yoeSvg" viewBox="0 0 640 200" role="img" aria-label="Job timeline"></svg></div>
+  <div class="readout r4"><div><span>naive sum</span><strong id="ySum"></strong></div><div><span>union (correct)</span><strong id="yUnion"></strong></div><div><span>overcount</span><strong id="yOver"></strong></div><div><span>gaps &gt; 3 mo</span><strong id="yGap"></strong></div></div>
+</div>
+
+<h2>Skill normalisation</h2>
+<p>Candidates write the same skill many ways. Normalise before storing, keep the original string for citations.</p>
+<div class="tbl"><table>
+<tr><th>Written as</th><th>Canonical</th><th>Note</th></tr>
+<tr><td>k8s, K8S, kubernetes, EKS, GKE, AKS</td><td>Kubernetes</td><td>EKS/GKE also add the cloud (AWS/GCP/Azure)</td></tr>
+<tr><td>golang, Go lang, Go</td><td>Go</td><td>"Go" is also an English word; only map inside skills/experience context</td></tr>
+<tr><td>Postgres, PostgreSQL, psql</td><td>PostgreSQL</td><td></td></tr>
+<tr><td>JS, Javascript, ECMAScript</td><td>JavaScript</td><td></td></tr>
+<tr><td>ML, machine learning</td><td>Machine Learning</td><td>Ambiguous abbreviations need context</td></tr>
+</table></div>
+<p>Also record <b>where</b> a skill appears: listed only in Skills (claimed) versus used in an Experience entry (evidenced). Interviewers care about the difference, and Phase 2 can weight evidenced skills higher.</p>
+
+<h2>PII and fairness</h2>
+<p>An assistant that helps judge candidates must not let protected attributes influence answers. At indexing time:</p>
+<ul>
+<li>Keep name, email, phone, address, photo, date of birth, gender, marital status in the metadata DB only.</li>
+<li>Remove them from chunk text before embedding; replace the name with the <code>candidate_id</code> in prompts used for ranking or comparison.</li>
+<li>Store a display name for the UI, so the interviewer still sees who is who.</li>
+</ul>
+
+<div class="why"><h4>Chosen for this use case</h4><ul>
+<li>Regex for contact fields and date strings; code computes dates, YOE and gaps.</li>
+<li>LLM (Ollama, JSON schema, temperature 0) per Experience entry for title, company and skills used; every value checked against source text.</li>
+<li>Skill alias dictionary seeded from an open taxonomy, extended as new skills appear; "claimed" vs "evidenced" stored.</li>
+<li>PII masked from embedded text.</li>
+</ul></div>
+</article>
+
+<!-- ================================================================ 8 -->
+<article class="chapter" id="chunking" data-group="Chunking" data-title="Chunking methods" hidden>
+<div class="eyebrow">Chapter 8 · Chunking</div>
+<h1>Chunking methods for resumes</h1>
+<p class="lede">A chunk is the unit you retrieve and cite. For resumes, the best unit is the one a human reader would use: a section, and inside Experience, one job.</p>
+
+<h2>Every main method</h2>
+<div class="tbl"><table>
+<tr><th>Method</th><th>How it works</th><th>Strength</th><th>Weakness for resumes</th></tr>
+<tr><td>Fixed-size</td><td>Every N tokens, with overlap</td><td>Trivial</td><td>Cuts a job in half; separates "PayNova" from what was done there</td></tr>
+<tr><td>Recursive</td><td>Split on blank lines, then lines, then sentences, until under N</td><td>Strong general baseline</td><td>Ignores that a job header belongs with its bullets</td></tr>
+<tr><td>Sentence / bullet</td><td>One chunk per sentence or bullet</td><td>Very precise</td><td>A bullet alone lacks company, title and dates</td></tr>
+<tr class="pick"><td>Section-aware <span class="badge b-pick">chosen</span></td><td>One chunk per canonical section</td><td>Matches how resumes are written</td><td>Experience is often too long for one chunk</td></tr>
+<tr class="pick"><td>Entry-level (hierarchical) <span class="badge b-pick">chosen</span></td><td>Experience and Projects split per entry; other sections whole</td><td>Each job is a self-contained story with its own dates</td><td>Needs entry detection (chapter 6)</td></tr>
+<tr><td>Semantic</td><td>Split where similarity between consecutive sentences drops</td><td>No structure needed</td><td>Resumes already have structure; produces tiny fragments from bullet lists</td></tr>
+<tr><td>Proposition</td><td>LLM rewrites text into atomic facts ("Arjun led a migration of 40 services to EKS at PayNova")</td><td>Precise, self-contained facts</td><td>One LLM call per section; may paraphrase claims</td></tr>
+<tr><td>Agentic / LLM chunking</td><td>LLM decides boundaries</td><td>Flexible</td><td>Expensive, non-deterministic</td></tr>
+<tr><td>Late chunking</td><td>Embed the whole resume with a long-context model, then pool token vectors per chunk</td><td>Each chunk vector "knows" the rest of the resume</td><td>Needs long-context embedder support (e.g. jina-embeddings-v3)</td></tr>
+<tr><td>Whole document</td><td>One chunk per resume</td><td>Good for resume-to-JD similarity</td><td>Blurred vector; cannot cite a line</td></tr>
+<tr class="pick"><td>Parent–child <span class="badge b-pick">chosen</span></td><td>Retrieve small children (entries), return the parent (whole section or resume) to the LLM</td><td>Precise search, full context for the answer</td><td>Two levels to store</td></tr>
+</table></div>
+
+<div class="widget" id="w-chunk">
+  <h4>Chunking strategies on one resume</h4>
+  <p class="sub">Pick a strategy. Each chunk is checked against the question <i>"Who led a Kubernetes migration, and at which company?"</i>: does it contain the evidence, and does it also contain the company so it answers on its own?</p>
+  <div class="chips" id="ckChips" role="tablist"></div>
+  <div class="readout r4"><div><span>chunks</span><strong id="ckN"></strong></div><div><span>avg tokens</span><strong id="ckAvg"></strong></div><div><span>with evidence</span><strong id="ckEv"></strong></div><div><span>self-contained</span><strong id="ckSelf"></strong></div></div>
+  <div class="fnote" id="ckNote"></div>
+  <div class="chunks" id="ckOut"></div>
+</div>
+
+<h2>The hierarchy we store</h2>
+<div class="flow" role="img" aria-label="Chunk hierarchy">
+  <div class="lane"><b>Level 0 · candidate profile (1 per resume)</b><span class="node f">summary + skills + headline → profile vector</span></div>
+  <div class="lane"><b>Level 1 · sections (parents)</b><span class="node">summary</span><span class="node">skills</span><span class="node">experience (full)</span><span class="node">projects (full)</span><span class="node">education</span><span class="node">certifications</span></div>
+  <div class="lane"><b>Level 2 · entries (children, embedded)</b><span class="node d">exp: PayNova 2021–now</span><span class="node d">exp: ShipKart 2018–20</span><span class="node d">exp: DataLeaf intern</span><span class="node d">proj: OpenTrace</span></div>
+</div>
+<p>Embedded and BM25-indexed: level 0, the short level-1 sections (summary, skills, education, certifications), and all level-2 entries. Stored but not embedded: long level-1 parents, used when Phase 2 expands a hit to its full section.</p>
+
+<div class="why"><h4>Chosen for this use case</h4><ul>
+<li>Section-aware chunking, with Experience and Projects split into one chunk per entry.</li>
+<li>Entries longer than the max budget split on bullet boundaries, with the entry header repeated on each part.</li>
+<li>Parent–child links so Phase 2 can return the whole section or resume.</li>
+<li>One profile chunk per candidate for JD-level matching.</li>
+<li>Compare against a 512-token recursive baseline in Phase 3; switch only if the eval set says so.</li>
+</ul></div>
+</article>
+
+<!-- ================================================================ 9 -->
+<article class="chapter" id="adaptive" data-group="Chunking" data-title="Adaptive token budgets" hidden>
+<div class="eyebrow">Chapter 9 · Chunking</div>
+<h1>Adaptive min/max token budgets</h1>
+<p class="lede">Your sketch asked: with many uploaded resumes, can the min and max chunk size be set by an algorithm, once, after parsing? Yes. This chapter gives the algorithm, the alternatives, and a live simulator.</p>
+
+<h2>Why fixed budgets fit resumes badly</h2>
+<p>A generic default like "max 512, min 50" ignores the corpus. Resume sections differ wildly: a Certifications section is 30 tokens, a senior engineer's Experience is 900. A batch of graduate resumes has short sections throughout; a batch of principal engineers has long ones. Budgets derived from the actual upload adapt to both.</p>
+
+<h2>The algorithm</h2>
+<pre><code>after parsing all resumes in the batch (or the whole role):
+    L = [tokens(section_or_entry) for every resume, every chunkable unit]
+    min_tok = clamp(percentile(L, p_low),  64, 128)
+    max_tok = clamp(percentile(L, p_high), 256, model_limit - prefix_reserve)
+    store {min_tok, max_tok, p_low, p_high, n_units, computed_at} in the index manifest
+
+for each unit:
+    if tokens(unit) &gt; max_tok:  split on bullet / sentence boundaries,
+                                  repeat the entry header on each part
+    if tokens(unit) &lt; min_tok:  merge into the next unit of the same section;
+                                  never merge across candidates or across job entries
+    else:                        keep whole</code></pre>
+<div class="math">\[\text{min\_tok} = \operatorname{clamp}\big(P_{p_{\text{low}}}(L),\ 64,\ 128\big) \qquad \text{max\_tok} = \operatorname{clamp}\big(P_{p_{\text{high}}}(L),\ 256,\ T_{\text{model}} - r\big)\]</div>
+<p>Here \(P_p(L)\) is the \(p\)-th percentile of unit lengths, \(T_{\text{model}}\) the embedding model's max tokens, and \(r\) the reserve for the contextual prefix (about 32 tokens). The clamps stop a strange batch from producing absurd budgets. Using \(p_{\text{high}} = 90\) means 90% of units are kept whole and only the longest 10% are split.</p>
+
+<div class="widget" id="w-adapt">
+  <h4>Adaptive budget simulator</h4>
+  <p class="sub">A simulated batch of 40 resumes (section and entry lengths drawn from realistic ranges). Move the percentiles and the model limit; watch which units get merged, kept and split.</p>
+  <div class="wgrid">
+    <div>
+      <div class="ctrl"><label for="aLo">p_low</label><input type="range" id="aLo" min="5" max="40" step="5" value="20"><output id="aLoO"></output></div>
+      <div class="ctrl"><label for="aHi">p_high</label><input type="range" id="aHi" min="70" max="99" step="1" value="90"><output id="aHiO"></output></div>
+      <div class="ctrl"><label for="aLim">model limit</label><select id="aLim" style="grid-column:2/4"><option value="256">256 (all-MiniLM-L6-v2)</option><option value="512" selected>512 (bge-small / e5)</option><option value="8192">8192 (bge-m3 / nomic)</option></select></div>
+      <div class="ctrl"><label for="aSen">batch seniority</label><select id="aSen" style="grid-column:2/4"><option value="grad">Graduates (short)</option><option value="mixed" selected>Mixed</option><option value="senior">Senior / principal (long)</option></select></div>
+      <div class="readout"><div><span>min_tok</span><strong id="aMin"></strong></div><div><span>max_tok</span><strong id="aMax"></strong></div><div><span>merged / kept / split</span><strong id="aMks"></strong></div><div><span>chunks after</span><strong id="aChunks"></strong></div></div>
+    </div>
+    <div style="min-width:0">
+      <div class="svgbox"><svg id="adSvg" viewBox="0 0 520 300" role="img" aria-label="Histogram of unit lengths with min and max lines"></svg></div>
+      <div class="legendline"><span><i style="background:var(--sparse)"></i>below min → merge</span><span><i style="background:var(--dense)"></i>kept whole</span><span><i style="background:var(--fused)"></i>above max → split</span></div>
+    </div>
+  </div>
+  <div id="adTbl" style="margin-top:12px"></div>
+</div>
+
+<h2>Alternatives to one global budget</h2>
+<div class="tbl"><table>
+<tr><th>Approach</th><th>How</th><th>When it wins</th></tr>
+<tr><td>Fixed defaults</td><td>Hard-code min/max (e.g. 64/400)</td><td>Quick baseline; small or unknown corpus</td></tr>
+<tr><td>Global percentile</td><td>One min/max from all units (the algorithm above)</td><td>Homogeneous batches</td></tr>
+<tr class="pick"><td>Per-section-type percentile <span class="badge b-pick">chosen</span></td><td>Separate max for experience entries, projects, skills…</td><td>Resumes: section lengths differ by an order of magnitude</td></tr>
+<tr><td>Per-document adaptive</td><td>Budgets from each resume's own lengths</td><td>Very mixed corpora (resumes + long portfolios); makes chunks hard to compare across candidates</td></tr>
+<tr><td>Eval-tuned</td><td>Grid search min/max on the golden set (Phase 3), pick best Recall@k</td><td>Final tuning once an eval set exists</td></tr>
+</table></div>
+
+<div class="note amber"><b>Stability matters.</b><p>If budgets are recomputed on every upload, the same resume may be chunked differently tomorrow, and old and new chunks no longer match. Compute budgets once per role (or when the corpus grows by more than, say, 50%), store them in the manifest, and re-chunk everything for that role when they change.</p></div>
+
+<div class="why"><h4>Chosen for this use case</h4><ul>
+<li>Per-section-type budgets from percentiles (p20 / p90), clamped, computed once per role after the first batch.</li>
+<li>Upper clamp always below the embedding model's limit minus the prefix reserve.</li>
+<li>Merges never cross job entries or candidates; splits repeat the entry header.</li>
+<li>Budgets and their inputs stored in the index manifest; Phase 3 grid-search confirms or overrides them.</li>
+</ul></div>
+</article>
+
+<!-- ================================================================ 10 -->
+<article class="chapter" id="enrich" data-group="Chunking" data-title="Enrichment &amp; schema" hidden>
+<div class="eyebrow">Chapter 10 · Chunking</div>
+<h1>Chunk enrichment and the chunk schema</h1>
+<p class="lede">A bullet that says "Cut infra cost by 32%" is useless out of context. Enrichment attaches the context a reader would have, so every chunk stands alone for both the embedder and BM25.</p>
+
+<h2>Enrichment methods</h2>
+<div class="tbl"><table>
+<tr><th>Method</th><th>What is added</th><th>Cost</th><th>Effect</th></tr>
+<tr class="pick"><td>Structural prefix <span class="badge b-pick">chosen</span></td><td><code>Candidate C12 | Experience &gt; Senior Backend Engineer @ PayNova (2021-01 – present)</code></td><td>Free</td><td>Company, title and dates become searchable from every bullet</td></tr>
+<tr><td>Contextual retrieval (LLM context)</td><td>An LLM-written sentence situating the chunk in the whole document</td><td>One LLM call per chunk</td><td>Anthropic reported 49% fewer failed retrievals with contextual embeddings + contextual BM25 (67% with reranking)</td></tr>
+<tr class="pick"><td>Normalised skill tags <span class="badge b-pick">chosen</span></td><td><code>skills: [Kubernetes, AWS, Go]</code> as metadata, and appended to BM25 text</td><td>Free after chapter 7</td><td>"k8s" in the query matches "EKS" in the chunk</td></tr>
+<tr><td>Hypothetical questions</td><td>LLM generates questions the chunk answers; embed those too</td><td>LLM call per chunk, more vectors</td><td>Better match for question-style queries</td></tr>
+<tr><td>Summary vectors</td><td>LLM summary of each section, embedded separately</td><td>LLM call per section</td><td>Helps broad queries ("strong in distributed systems?")</td></tr>
+<tr class="pick"><td>Candidate profile chunk <span class="badge b-pick">chosen</span></td><td>Headline + summary + top skills + YOE as one chunk</td><td>Free (from metadata)</td><td>JD-to-candidate matching</td></tr>
+</table></div>
+
+<h2>Before and after</h2>
+<div class="compare">
+<div class="bad"><b class="h">Raw chunk</b><pre>- Led migration of 40 microservices from EC2 to EKS, cutting infra cost by 32%.
+- Designed idempotent payment retry service handling 1.2M transactions/day in Go.</pre>
+<p style="font-size:13px;margin:.4em 0 0">Who? Where? When? A query mentioning PayNova or "senior" cannot match it.</p></div>
+<div class="good"><b class="h">Enriched chunk (what gets embedded)</b><pre>Candidate C12 | Experience &gt; Senior Backend Engineer @ PayNova (2021-01 – present)
+- Led migration of 40 microservices from EC2 to EKS, cutting infra cost by 32%.
+- Designed idempotent payment retry service handling 1.2M transactions/day in Go.
+Skills: Kubernetes, AWS EKS, Go, Payments</pre></div>
+</div>
+<p>Use the candidate ID, not the name, in the embedded text. Names add nothing to meaning and are PII (chapter 7).</p>
+
+<h2>The chunk schema</h2>
+<pre><code>Chunk {
+  chunk_id        "c12-exp-1-p1"         // deterministic: candidate + section + entry + part
+  candidate_id    "c12"
+  role_id         "r3"
+  doc_id          "sha256:9f2c…"
+  level           2                      // 0 profile, 1 section, 2 entry
+  parent_id       "c12-exp"              // for parent expansion
+  section         "experience"
+  entry_title     "Senior Backend Engineer @ PayNova"
+  start, end      "2021-01", null
+  skills          ["Kubernetes", "AWS EKS", "Go", "Payments"]
+  text            "- Led migration of 40 …"       // shown and cited
+  embed_text      "Candidate C12 | Experience &gt; … \n- Led …"  // embedded + BM25
+  n_tokens        74
+  page            1
+  content_hash    "sha256:41ab…"         // re-embed only if this changes
+  emb_model       "BAAI/bge-small-en-v1.5"
+  index_version   "v3"
+}</code></pre>
+<p>Keep <code>text</code> (what the interviewer sees) separate from <code>embed_text</code> (what the model sees). You can change the enrichment without changing citations.</p>
+
+<div class="why"><h4>Chosen for this use case</h4><ul>
+<li>Structural prefix and skill tags on every chunk: free and high impact.</li>
+<li>One profile chunk per candidate.</li>
+<li>LLM contextual summaries and hypothetical questions are optional experiments for Phase 3, not defaults; the structural prefix already supplies most of the context for resumes.</li>
+</ul></div>
+</article>
+
+<!-- ================================================================ 11 -->
+<article class="chapter" id="embed" data-group="Indexing" data-title="Embedding models" hidden>
+<div class="eyebrow">Chapter 11 · Indexing</div>
+<h1>Choosing embedding models</h1>
+<p class="lede">An embedding model maps each chunk to a vector so that similar meanings land close together. Your sketch asked to use several models and to decide the model by use case. This chapter covers the families, the candidates, and how to decide.</p>
+
+<h2>Families of retrieval models</h2>
+<div class="tbl"><table>
+<tr><th>Family</th><th>Output</th><th>Strength</th><th>Weakness</th><th>Examples</th></tr>
+<tr class="pick"><td><span class="dense">Dense bi-encoder</span> <span class="badge b-pick">chosen</span></td><td>One vector per chunk</td><td>Fast, simple, every vector DB supports it</td><td>Weak on rare exact terms (versions, acronyms)</td><td>BGE, E5, GTE, nomic, Qwen3-Embedding</td></tr>
+<tr class="pick"><td><span class="sparse">Lexical sparse</span> <span class="badge b-pick">chosen</span></td><td>Term weights (BM25)</td><td>Exact skill names, no model</td><td>No synonyms or paraphrase</td><td>BM25 (chapter 12)</td></tr>
+<tr><td>Learned sparse</td><td>Weighted vocabulary terms, expanded</td><td>Exact match plus some synonyms</td><td>Fewer tools support it</td><td>SPLADE, bge-m3 sparse output</td></tr>
+<tr><td>Multi-vector (late interaction)</td><td>One vector per token</td><td>Highest precision</td><td>10–100× storage</td><td>ColBERTv2, bge-m3 colbert, ColPali (images)</td></tr>
+<tr><td>Cross-encoder (reranker)</td><td>A score for a (query, chunk) pair</td><td>Most accurate ranking</td><td>Cannot index; query time only</td><td>bge-reranker (Phase 2)</td></tr>
+</table></div>
+
+<h2>Open-source candidates</h2>
+<div class="tbl"><table>
+<tr><th>Model</th><th>Dim</th><th>Max tokens</th><th>Notes</th></tr>
+<tr><td><code>sentence-transformers/all-MiniLM-L6-v2</code></td><td class="num">384</td><td class="num">256</td><td>Tiny baseline; truncates long entries</td></tr>
+<tr class="pick"><td><code>BAAI/bge-small-en-v1.5</code> <span class="badge b-pick">baseline</span></td><td class="num">384</td><td class="num">512</td><td>Fast on CPU; query instruction prefix</td></tr>
+<tr><td><code>BAAI/bge-base-en-v1.5</code></td><td class="num">768</td><td class="num">512</td><td>Better quality, ~3× slower</td></tr>
+<tr><td><code>intfloat/e5-base-v2</code></td><td class="num">768</td><td class="num">512</td><td>Needs <code>query:</code> / <code>passage:</code> prefixes</td></tr>
+<tr><td><code>nomic-embed-text</code> (v1.5)</td><td class="num">768</td><td class="num">8192</td><td>Runs in Ollama; Matryoshka; <code>search_query:</code>/<code>search_document:</code> prefixes</td></tr>
+<tr><td><code>mxbai-embed-large</code></td><td class="num">1024</td><td class="num">512</td><td>Runs in Ollama; strong English retrieval</td></tr>
+<tr class="pick"><td><code>BAAI/bge-m3</code> <span class="badge b-pick">challenger</span></td><td class="num">1024</td><td class="num">8192</td><td>Multilingual; dense + sparse + multi-vector from one model</td></tr>
+<tr><td><code>Qwen3-Embedding-0.6B</code> / <code>EmbeddingGemma</code></td><td class="num">1024 / 768</td><td class="num">long</td><td>Newer small models with strong benchmark results; check hardware fit</td></tr>
+</table></div>
+<p style="font-size:14px;color:var(--muted)">Paid equivalents behind the same interface: OpenAI text-embedding-3, Voyage, Cohere Embed. Check current model versions when you get there.</p>
+
+<h2>Deciding the model by use case</h2>
+<p>"Decide the model based on the use case" becomes a <b>use-case profile</b> in config. Resumes have specific traits that point to specific choices:</p>
+<div class="tbl"><table>
+<tr><th>Resume trait</th><th>Implication for the model</th></tr>
+<tr><td>Chunks are short (50–400 tokens)</td><td>512-token models are enough; long context is not needed for chunks</td></tr>
+<tr><td>Keyword-dense, many acronyms</td><td>Model choice matters less than having BM25 alongside it</td></tr>
+<tr><td>Some resumes not in English, or mixed (Hinglish, German)</td><td>Prefer a multilingual model (bge-m3)</td></tr>
+<tr><td>Small corpus</td><td>Dimension and memory are not constraints; pick on quality</td></tr>
+<tr><td>Must run on a laptop CPU</td><td>Prefer small models (bge-small, nomic) for fast re-indexing during experiments</td></tr>
+</table></div>
+<pre><code>use_case: resume
+profiles:
+  resume:
+    sections: configs/sections_resume.yaml
+    chunker:  {strategy: section_entry, budgets: adaptive_per_section}
+    embedding_candidates: [bge-small-en-v1.5, bge-m3, nomic-embed-text, e5-base-v2]
+    embedding_default: bge-small-en-v1.5
+    keyword: {enabled: true, tokenizer: tech_aware}</code></pre>
+
+<h2>Running several models</h2>
+<ul>
+<li>Build <b>one index per model</b>; name it by model (<code>idx_r3_bge-small_v3</code>). Vectors from different models can never be mixed.</li>
+<li>Parsing and chunking are shared; only the embed step repeats.</li>
+<li>Apply each model's documented query and passage prefixes.</li>
+<li>Normalise vectors (L2) and use inner product, so cosine, dot and L2 rank identically.</li>
+<li>Choose with Phase 3 metrics on your golden set, not with leaderboard rank.</li>
+</ul>
+
+<div class="widget" id="w-mem">
+  <h4>Index size and speed calculator</h4>
+  <p class="sub">How much memory do the vectors need, and is exact search fast enough? Rough estimates for a CPU.</p>
+  <div class="ctrl"><label for="mR">resumes</label><input type="range" id="mR" min="1" max="5" step="0.1" value="2.3"><output id="mRO"></output></div>
+  <div class="ctrl"><label for="mC">chunks / resume</label><input type="range" id="mC" min="4" max="40" step="1" value="12"><output id="mCO"></output></div>
+  <div class="ctrl"><label for="mD">dimension</label><select id="mD" style="grid-column:2/4"><option value="384">384 (bge-small)</option><option value="768">768 (nomic, e5-base)</option><option value="1024">1024 (bge-m3)</option></select></div>
+  <div id="mBars" style="margin-top:10px"></div>
+  <div class="fnote" id="mRec"></div>
+</div>
+
+<div class="why"><h4>Chosen for this use case</h4><ul>
+<li>Baseline <b>bge-small-en-v1.5</b> (fast, CPU), challenger <b>bge-m3</b> (multilingual), plus nomic-embed-text and e5-base-v2 in the comparison set.</li>
+<li>One index per model, chosen by Phase 3 metrics.</li>
+<li>Always paired with BM25.</li>
+<li>Behind an <code>EmbeddingProvider</code> interface; swapping to a paid API is a config change plus a re-index.</li>
+</ul></div>
+</article>
+
+<!-- ================================================================ 12 -->
+<article class="chapter" id="keyword" data-group="Indexing" data-title="Keyword index (BM25)" hidden>
+<div class="eyebrow">Chapter 12 · Indexing</div>
+<h1>The keyword index: BM25 for skills</h1>
+<p class="lede">Interviewers search for exact things: "Terraform", "CKA", "C#". Dense vectors are bad at rare exact tokens. BM25 is good at them, cheap, and needs no model.</p>
+
+<h2>How BM25 scores</h2>
+<div class="math">\[\text{score}(D, Q) = \sum_{t \in Q} \text{IDF}(t)\cdot \frac{f(t,D)\,(k_1+1)}{f(t,D) + k_1\left(1 - b + b\,\frac{|D|}{\text{avgdl}}\right)}\]</div>
+<div class="math">\[\text{IDF}(t) = \ln\!\left(\frac{N - n_t + 0.5}{n_t + 0.5} + 1\right)\]</div>
+<p>\(f(t,D)\) is how often term \(t\) appears in chunk \(D\); \(n_t\) is how many chunks contain it; \(N\) is the number of chunks. Rare terms ("Terraform" in 3 of 600 chunks) get high IDF; common ones ("team") get almost none. \(k_1 \approx 1.2\) caps the reward for repeating a term; \(b \approx 0.75\) normalises for chunk length. For resumes, keyword stuffing ("Python Python Python") is limited by \(k_1\) saturation.</p>
+
+<h2>The tokenizer is where resumes break BM25</h2>
+<p>A standard tokenizer lowercases and splits on punctuation. That destroys tech terms: <code>C++</code> and <code>C#</code> both become <code>c</code>, <code>.NET</code> becomes <code>net</code>, <code>Node.js</code> becomes <code>node</code> + <code>js</code>. Then a search for C# matches every C++ resume.</p>
+
+<div class="widget" id="w-tok">
+  <h4>Tokenizer comparison</h4>
+  <p class="sub">Type a skills line. Left: a standard tokenizer. Right: a tech-aware tokenizer with protected terms and aliases. Amber tokens are terms destroyed by the standard tokenizer.</p>
+  <label for="tIn" hidden>Skills text</label>
+  <input type="text" id="tIn" value="Skilled in C++, C#, .NET, Node.js, Go and k8s; CI/CD with GitHub Actions; Postgres and golang microservices.">
+  <div class="wgrid" style="margin-top:12px">
+    <div><b style="font-size:13px">Standard (lowercase, split on non-alphanumerics)</b><div class="toks" id="tStd"></div></div>
+    <div><b style="font-size:13px">Tech-aware (protected terms + aliases)</b><div class="toks" id="tTech"></div></div>
+  </div>
+  <div class="fnote" id="tNote"></div>
+</div>
+
+<h2>Implementation options</h2>
+<div class="tbl"><table>
+<tr><th>Option</th><th>Where it lives</th><th>Notes</th></tr>
+<tr class="pick"><td><code>bm25s</code> / <code>rank_bm25</code> <span class="badge b-pick">chosen</span></td><td>In-process Python, pickled to disk</td><td>Simplest; bm25s is much faster; custom tokenizer is a function you pass in</td></tr>
+<tr><td>SQLite FTS5</td><td>Same SQLite file as metadata</td><td>BM25 ranking built in; custom tokenizers are harder</td></tr>
+<tr><td>Tantivy / LanceDB FTS</td><td>Embedded Rust index</td><td>Fast; LanceDB gives vectors + FTS in one embedded store</td></tr>
+<tr><td>Elasticsearch / OpenSearch <span class="badge b-prod">prod option</span></td><td>Server</td><td>Analyzers with synonym filters, BM25 + kNN + filters in one query</td></tr>
+<tr><td>Learned sparse (SPLADE, bge-m3 sparse)</td><td>Sparse vectors in Qdrant / Milvus / Elastic</td><td>Adds expansion ("k8s" ~ "kubernetes") learned from data</td></tr>
+</table></div>
+
+<h2>What text to index</h2>
+<p>Index <code>embed_text</code> (with the structural prefix) plus the normalised skill tags. Then a query for "PayNova Kubernetes" matches the PayNova entry even if the bullet only says "EKS", because the prefix carries "PayNova" and the tags carry "Kubernetes".</p>
+
+<div class="why"><h4>Chosen for this use case</h4><ul>
+<li>BM25 via <code>bm25s</code> with a tech-aware tokenizer: protected terms list (C++, C#, .NET, Node.js, CI/CD…) and an alias map shared with skill normalisation.</li>
+<li>Same <code>chunk_id</code>s as the vector index, so Phase 2 can fuse the two rankings.</li>
+<li>Prod: move to OpenSearch/Elasticsearch with a synonym analyzer, or to a store with built-in hybrid search.</li>
+</ul></div>
+</article>
+
+<!-- ================================================================ 13 -->
+<article class="chapter" id="storage" data-group="Indexing" data-title="Storage &amp; databases" hidden>
+<div class="eyebrow">Chapter 13 · Indexing</div>
+<h1>Storage: indexes, vector stores and the metadata DB</h1>
+<p class="lede">An index is a data structure for fast search; a database adds persistence, filtering, concurrency and deletes. You can index without a database, but a production assistant needs both.</p>
+
+<h2>Index versus database</h2>
+<div class="tbl"><table>
+<tr><th>Approach</th><th>Search works?</th><th>Survives restart?</th><th>Multiple workers?</th><th>Filters?</th></tr>
+<tr><td>Python list in Flask RAM</td><td>Yes (brute force)</td><td>No: re-parse and re-embed everything</td><td>No: each worker has its own copy</td><td>Ad hoc</td></tr>
+<tr><td>JSON file on disk</td><td>Yes after loading</td><td>Yes</td><td>Read-only only; concurrent writes corrupt it</td><td>Ad hoc</td></tr>
+<tr class="pick"><td>FAISS file + SQLite <span class="badge b-pick">option A</span></td><td>Yes</td><td>Yes</td><td>Reads yes; single writer</td><td>SQL, then ID filter</td></tr>
+<tr class="pick"><td>Chroma / LanceDB embedded <span class="badge b-pick">option B</span></td><td>Yes</td><td>Yes</td><td>Single process</td><td>Built-in metadata filters</td></tr>
+<tr><td>Vector DB server (Qdrant, pgvector, OpenSearch)</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Built-in, rich</td></tr>
+</table></div>
+
+<h2>Vector store options</h2>
+<div class="tbl"><table>
+<tr><th>Store</th><th>Type</th><th>Hybrid (BM25 + vector)</th><th>Filters</th><th>Fits</th></tr>
+<tr><td>NumPy matrix</td><td>In-process</td><td>No</td><td>Manual</td><td>Learning, &lt;10k chunks</td></tr>
+<tr><td>FAISS</td><td>Library</td><td>No</td><td>ID selector only</td><td>Fast exact or ANN search; pair with SQLite</td></tr>
+<tr><td>Chroma</td><td>Embedded or server</td><td>Limited</td><td>Yes</td><td>Simplest persistent store for prototypes</td></tr>
+<tr><td>LanceDB</td><td>Embedded (files)</td><td>Yes (FTS)</td><td>Yes (SQL-like)</td><td>Embedded with hybrid search</td></tr>
+<tr><td>sqlite-vec</td><td>SQLite extension</td><td>With FTS5</td><td>SQL</td><td>Everything in one SQLite file</td></tr>
+<tr><td>Qdrant</td><td>Server or local mode</td><td>Yes (sparse vectors)</td><td>Rich payload filters</td><td>Strong open-source production choice</td></tr>
+<tr><td>Postgres + pgvector</td><td>Server</td><td>With Postgres FTS</td><td>Full SQL, joins</td><td>One DB for metadata and vectors <span class="badge b-prod">prod</span></td></tr>
+<tr><td>Elasticsearch / OpenSearch</td><td>Server</td><td>Yes, native</td><td>Rich</td><td>Best keyword search + kNN; more context per hit <span class="badge b-prod">prod</span></td></tr>
+<tr><td>Weaviate / Milvus</td><td>Server</td><td>Yes</td><td>Yes</td><td>Large-scale vector workloads</td></tr>
+<tr><td>Pinecone / managed</td><td>SaaS</td><td>Yes</td><td>Yes</td><td>No ops; paid</td></tr>
+</table></div>
+
+<h3>FAISS versus Elasticsearch, from your sketch</h3>
+<p>FAISS is a search library: it stores vectors and returns IDs. Text, metadata, filters and keyword search live elsewhere. Elasticsearch/OpenSearch is a search server: one document holds the chunk text, metadata fields, BM25-indexed text and a vector, and one query can combine a keyword match, a kNN search and filters like <code>role_id = r3 AND total_yoe &gt;= 5</code>. That is what "much more context on the DB" means: each hit comes back with everything Phase 2 needs. FAISS + SQLite gives the same result for the assignment with two lookups instead of one.</p>
+
+<h2>Index types (why flat is right here)</h2>
+<p>Exact (flat) search compares the query with every vector. 500 resumes × 12 chunks × 384 dims is 6,000 vectors, about 9 MB, searched in well under a millisecond. Approximate indexes (HNSW, IVF, PQ) only pay off past hundreds of thousands of vectors and cost some recall. Use <code>IndexFlatIP</code> on normalised vectors.</p>
+
+<h2>The metadata data model</h2>
+<div class="er">
+  <div><b>roles</b><ul><li class="pk">role_id</li><li>title</li><li>jd_text</li><li>status</li><li>chunk_budgets (json)</li></ul></div>
+  <div><b>candidates</b><ul><li class="pk">candidate_id</li><li>display_name</li><li>email_hash</li><li>headline</li><li>total_yoe</li><li>seniority</li></ul></div>
+  <div><b>applications</b><ul><li class="pk">candidate_id, role_id</li><li>applied_at</li><li>status</li></ul></div>
+  <div><b>documents</b><ul><li class="pk">doc_id (sha256)</li><li>candidate_id</li><li>doc_type</li><li>parser, parser_version</li><li>status, error</li><li>markdown_path</li></ul></div>
+  <div><b>experiences</b><ul><li class="pk">exp_id</li><li>candidate_id</li><li>title, company</li><li>start, end</li><li>chunk_id</li></ul></div>
+  <div><b>skills</b><ul><li class="pk">candidate_id, skill</li><li>evidence: claimed | used</li><li>years</li><li>chunk_ids</li></ul></div>
+  <div><b>chunks</b><ul><li class="pk">chunk_id</li><li>candidate_id, role_id, doc_id</li><li>level, parent_id, section</li><li>text, embed_text, n_tokens</li><li>content_hash</li></ul></div>
+  <div><b>certifications</b><ul><li class="pk">candidate_id, name</li><li>year</li></ul></div>
+  <div><b>index_manifest</b><ul><li class="pk">index_version</li><li>emb_model, dim</li><li>chunker_cfg</li><li>created_at</li></ul></div>
+</div>
+<p>With this, "5+ years and a CKA" is one SQL query; its candidate IDs then filter the vector search in Phase 2.</p>
+
+<div class="why"><h4>Chosen for this use case</h4><ul>
+<li>Assignment: <b>SQLite</b> for metadata and chunk text, <b>FAISS IndexFlatIP</b> saved to disk per model (or Chroma persistent if you prefer one embedded store), <b>bm25s</b> saved to disk. Load all three at startup.</li>
+<li>All behind <code>VectorStore</code>, <code>KeywordIndex</code> and <code>MetadataStore</code> interfaces.</li>
+<li>Production: Postgres + pgvector (one database) or OpenSearch (best hybrid search); both are config swaps behind the same interfaces.</li>
+</ul></div>
+</article>
+
+<!-- ================================================================ 14 -->
+<article class="chapter" id="ops" data-group="Operations" data-title="Pipeline engineering" hidden>
+<div class="eyebrow">Chapter 14 · Operations</div>
+<h1>Pipeline engineering and provider interfaces</h1>
+<p class="lede">The difference between an assignment and a system that can go to production is mostly here: re-runs that do not duplicate, versions you can trace, deletes that delete everything, and providers you can swap.</p>
+
+<h2>Idempotency and versioning</h2>
+<ul>
+<li><b>Deterministic IDs.</b> <code>doc_id = sha256(file)</code>; <code>chunk_id</code> from candidate, section, entry and part. Re-running the pipeline overwrites, never duplicates.</li>
+<li><b>Content hashes.</b> Re-embed a chunk only if its <code>content_hash</code> changed.</li>
+<li><b>Index version.</b> <code>index_version = hash(parser_version, chunker_config, budgets, emb_model)</code>. Any change produces a new version; build it alongside the old one, then switch atomically.</li>
+<li><b>Manifest.</b> Every index records how it was built. Phase 2 checks that its query embedding model matches.</li>
+</ul>
+
+<h2>Deletion</h2>
+<p>A candidate withdraws or asks for their data to be deleted. One function must remove the raw file, Markdown, DB rows, vectors and BM25 entries. FAISS flat indexes support <code>remove_ids</code> (with an <code>IndexIDMap</code>); BM25 indexes are rebuilt for the role. Test it; it is easy to forget one store.</p>
+
+<h2>Provider interfaces</h2>
+<p>Application code imports interfaces only. A factory reads config and returns the concrete class. Swapping free for paid is a config change.</p>
+<pre><code>class DocumentParser(Protocol):
+    def parse(self, path: Path) -&gt; ParsedDoc: ...          # markdown + pages + quality stats
+
+class EmbeddingProvider(Protocol):
+    model_id: str; dim: int; max_tokens: int
+    def embed_documents(self, texts: list[str]) -&gt; np.ndarray: ...
+    def embed_query(self, text: str) -&gt; np.ndarray: ...    # applies the model's query prefix
+
+class LLMProvider(Protocol):
+    def generate(self, prompt: str, schema: type[BaseModel] | None = None) -&gt; str | BaseModel: ...
+
+class VectorStore(Protocol):
+    def upsert(self, ids, vectors, metadata) -&gt; None: ...
+    def search(self, vector, k, filters=None) -&gt; list[Hit]: ...
+    def delete(self, ids) -&gt; None: ...
+
+class KeywordIndex(Protocol):
+    def build(self, ids, texts) -&gt; None: ...
+    def search(self, query, k, filters=None) -&gt; list[Hit]: ...
+
+def get_embedder(cfg) -&gt; EmbeddingProvider:
+    return {"sentence_transformers": STEmbedder, "ollama": OllamaEmbedder,
+            "openai": OpenAIEmbedder}[cfg.embedding.provider](cfg.embedding)</code></pre>
+
+<div class="tbl"><table>
+<tr><th>Interface</th><th>Free (now)</th><th>Paid / prod (later)</th></tr>
+<tr><td>DocumentParser</td><td>pymupdf4llm, Docling, Tesseract, Qwen2.5-VL</td><td>Azure Document Intelligence, LlamaParse, Affinda</td></tr>
+<tr><td>EmbeddingProvider</td><td>sentence-transformers (BGE, E5), Ollama (nomic)</td><td>OpenAI, Voyage, Cohere</td></tr>
+<tr><td>LLMProvider</td><td>Ollama (llama3.1, qwen2.5)</td><td>Claude, OpenAI, Bedrock</td></tr>
+<tr><td>VectorStore</td><td>FAISS, Chroma</td><td>pgvector, Qdrant, OpenSearch, Pinecone</td></tr>
+<tr><td>KeywordIndex</td><td>bm25s</td><td>OpenSearch / Elasticsearch</td></tr>
+<tr><td>MetadataStore</td><td>SQLite</td><td>Postgres</td></tr>
+</table></div>
+
+<h2>Observability</h2>
+<ul>
+<li>Log per document: parser used, time per stage, sections found, chunks produced, warnings.</li>
+<li>Keep a <b>parse report</b> per batch: how many went to each parser, how many need review.</li>
+<li>Persist intermediate artefacts (Markdown, JSON profile, chunks as JSONL) so you can inspect any stage without re-running it.</li>
+</ul>
+
+<div class="why"><h4>Chosen for this use case</h4><ul>
+<li>Deterministic IDs, content hashes, versioned indexes with a manifest.</li>
+<li>One delete function covering every store, with a test.</li>
+<li>Protocol interfaces + factory + <code>config.yaml</code>; secrets from environment variables.</li>
+<li>Intermediate artefacts saved to disk for debugging.</li>
+</ul></div>
+</article>
+
+<!-- ================================================================ 15 -->
+<article class="chapter" id="exit" data-group="Operations" data-title="Quality gates &amp; exit" hidden>
+<div class="eyebrow">Chapter 15 · Operations</div>
+<h1>Phase 1 quality gates and exit criteria</h1>
+<p class="lede">Full retrieval evaluation belongs to Phase 3, but you can and should check indexing quality on its own before moving on. Bad parsing found now is cheap; found after Phase 2 it looks like a retrieval bug.</p>
+
+<h2>Checks per stage</h2>
+<div class="tbl"><table>
+<tr><th>Stage</th><th>Check</th><th>Target</th></tr>
+<tr><td>Parsing</td><td>Characters per page; garbage ratio (non-printable / replacement chars)</td><td>&gt; 200 chars/page; &lt; 1% garbage</td></tr>
+<tr><td>Parsing</td><td>Manual review of 10 random resumes, including 3 two-column</td><td>Reading order correct in all 10</td></tr>
+<tr><td>Sections</td><td>Share of resumes with ≥ 4 known sections</td><td>≥ 95%</td></tr>
+<tr><td>Sections</td><td>Tokens inside known sections / total tokens</td><td>≥ 90%</td></tr>
+<tr><td>Metadata</td><td>Field accuracy on 10 hand-labelled resumes (company, title, dates, degree)</td><td>≥ 90% per field</td></tr>
+<tr><td>Metadata</td><td>Total YOE within ±0.5 years of hand calculation</td><td>≥ 90% of resumes</td></tr>
+<tr><td>Chunking</td><td>Size distribution: share of chunks under min or over model limit</td><td>&lt; 5% under min, 0% over limit</td></tr>
+<tr><td>Chunking</td><td>Every Experience chunk contains company and dates (via prefix)</td><td>100%</td></tr>
+<tr><td>Embedding</td><td>Spot check: nearest neighbours of 5 chunks make sense</td><td>Manual</td></tr>
+<tr><td>Storage</td><td>Counts match across vector index, BM25 and DB</td><td>Exactly equal</td></tr>
+<tr><td>Ops</td><td>Re-upload same batch → no new chunks; delete a candidate → 0 rows left anywhere</td><td>Pass</td></tr>
+</table></div>
+
+<h2>Start the golden dataset now</h2>
+<p>Phase 3 needs labelled queries. Writing them while you inspect parsed resumes is cheapest: for each of 15–20 test resumes, note 2–3 questions and the <code>chunk_id</code>s that answer them. These become the retrieval eval set and also the first smoke test of Phase 2.</p>
+
+<h2>Exit checklist</h2>
+<p>Tick items as you complete them. Progress is saved in this browser.</p>
+<ul class="checklist" id="exitList">
+<li>Test corpus assembled: 15–20 resumes incl. two-column, scanned, DOCX, and one non-English</li>
+<li>Parser router implemented with validation and "needs review" status</li>
+<li>Markdown and JSON profile saved for every resume</li>
+<li>Section synonym dictionary in config; coverage ≥ 90%</li>
+<li>Experience split into entries; dates normalised; YOE as interval union</li>
+<li>Skill alias map shared by metadata extraction and the BM25 tokenizer</li>
+<li>Adaptive per-section budgets computed and stored in the manifest</li>
+<li>Structural prefix on every chunk; text and embed_text stored separately</li>
+<li>Two embedding models indexed side by side (bge-small, bge-m3)</li>
+<li>BM25 index with tech-aware tokenizer; same chunk_ids as vectors</li>
+<li>SQLite schema populated; FAISS and BM25 persisted and reloaded at startup</li>
+<li>Re-upload idempotency and delete-everywhere tests pass</li>
+<li>All providers behind interfaces, chosen from config.yaml</li>
+<li>Golden questions drafted with expected chunk_ids</li>
+</ul>
+</article>
+
+<!-- ================================================================ 16 -->
+<article class="chapter" id="decisions" data-group="Operations" data-title="Decision record" hidden>
+<div class="eyebrow">Chapter 16 · Operations</div>
+<h1>Phase 1 decision record</h1>
+<p class="lede">Every choice in this guide in one table: what we picked, what else exists, and the signal that should make you switch.</p>
+
+<div class="tbl"><table>
+<tr><th>Step</th><th>Chosen</th><th>Alternatives</th><th>Switch when</th></tr>
+<tr><td>Corpus scope</td><td>Shared index, <code>role_id</code> filter</td><td>Index per role</td><td>Strict tenant isolation is required</td></tr>
+<tr><td>Intake</td><td>Background worker + status table</td><td>Synchronous; Celery/RQ; cloud pipeline</td><td>More than one worker process needed</td></tr>
+<tr><td>Parsing</td><td>pymupdf4llm → Docling → VLM, routed and validated</td><td>pypdf; Marker; MinerU; Unstructured; paid APIs</td><td>&gt;10% of files need review → stronger default or paid API</td></tr>
+<tr><td>Format</td><td>Markdown + JSON profile</td><td>Plain text; HTML; DoclingDocument; page-image vectors</td><td>Mostly designed/infographic resumes → ColPali-style retrieval</td></tr>
+<tr><td>Sections</td><td>Headings + heuristics + synonym dict; LLM fallback</td><td>Fuzzy/embedding match; trained labeller</td><td>Coverage &lt; 90% on new batches</td></tr>
+<tr><td>Metadata</td><td>Regex + LLM (JSON schema) per entry, grounded; code computes YOE</td><td>NER; commercial resume parser</td><td>Field accuracy &lt; 90%, or multilingual needs</td></tr>
+<tr><td>Skills</td><td>Alias dictionary from open taxonomy; claimed vs evidenced</td><td>Embedding-based skill matching</td><td>Many unmapped skills per batch</td></tr>
+<tr><td>Chunking</td><td>Section + entry, parent–child, profile chunk</td><td>Fixed; recursive; semantic; proposition; late chunking</td><td>Phase 3 shows a baseline beating it</td></tr>
+<tr><td>Budgets</td><td>Per-section percentiles (p20/p90), clamped, once per role</td><td>Fixed; global; per-document; eval-tuned</td><td>Phase 3 grid search finds better values</td></tr>
+<tr><td>Enrichment</td><td>Structural prefix + skill tags</td><td>LLM contextual summaries; hypothetical questions</td><td>Recall@5 plateaus below target</td></tr>
+<tr><td>Embedding</td><td>bge-small (baseline), bge-m3 (challenger)</td><td>e5, nomic, mxbai, Qwen3-Embedding; paid APIs</td><td>Phase 3 metrics</td></tr>
+<tr><td>Keyword</td><td>bm25s + tech-aware tokenizer</td><td>SQLite FTS5; Tantivy; OpenSearch; SPLADE</td><td>Moving to a server store with native hybrid</td></tr>
+<tr><td>Vector store</td><td>FAISS flat (or Chroma) + SQLite</td><td>LanceDB; Qdrant; pgvector; OpenSearch; Pinecone</td><td>Multiple app instances or production deploy</td></tr>
+<tr><td>Ops</td><td>Deterministic IDs, versioned indexes, interfaces + config</td><td>—</td><td>—</td></tr>
+</table></div>
+
+<h2>What Phase 2 will build on</h2>
+<ul>
+<li>Hybrid retrieval: dense + BM25 fused with Reciprocal Rank Fusion, filtered by <code>role_id</code> and SQL-selected candidate IDs.</li>
+<li>Reranking with a cross-encoder.</li>
+<li>Aggregation of chunk hits per candidate, and parent expansion to full sections.</li>
+<li>Prompting with citations by <code>chunk_id</code>.</li>
+</ul>
+<p>Its own study guide comes before any Phase 2 code, following the rule in <code>CLAUDE.md</code>.</p>
+
+<h2>Glossary</h2>
+<dl class="gloss">
+<dt>Chunk</dt><dd>The unit that is embedded, retrieved and cited.</dd>
+<dt>Entry</dt><dd>One job or project inside a resume section.</dd>
+<dt>Canonical section</dt><dd>A fixed label (experience, skills…) that many heading names map to.</dd>
+<dt>Structural prefix</dt><dd>Context line prepended to a chunk before embedding: candidate, section, entry, dates.</dd>
+<dt>Parent–child</dt><dd>Search small chunks, return their larger parent for context.</dd>
+<dt>BM25</dt><dd>Keyword relevance score using term frequency and rarity.</dd>
+<dt>Dense vector</dt><dd>Embedding-model output representing meaning.</dd>
+<dt>Index manifest</dt><dd>Record of how an index was built: parser, chunker, budgets, model.</dd>
+<dt>YOE</dt><dd>Years of experience, computed as the union of job intervals.</dd>
+<dt>Golden dataset</dt><dd>Hand-labelled questions with the chunks that answer them.</dd>
+</dl>
+</article>
+
+<div class="chapter pager" id="pager"></div>
+</main>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const chapters = Array.from(document.querySelectorAll("article.chapter"));
+  const rail = $("railnav"), mnav = $("mnav"), pager = $("pager");
+
+  // ---------- navigation
+  let group = null, list = null;
+  chapters.forEach((ch, i) => {
+    const title = ch.dataset.title;
+    if (ch.dataset.group !== group) {
+      group = ch.dataset.group;
+      const g = document.createElement("div"); g.className = "grp"; g.textContent = group; rail.appendChild(g);
+      list = document.createElement("ol"); rail.appendChild(list);
+      const og = document.createElement("optgroup"); og.label = group; mnav.appendChild(og);
+    }
+    const li = document.createElement("li");
+    const b = document.createElement("button"); b.type = "button"; b.dataset.id = ch.id;
+    b.innerHTML = "<span>" + String(i + 1).padStart(2, "0") + "</span>" + esc(title);
+    b.addEventListener("click", () => go(ch.id, true));
+    li.appendChild(b); list.appendChild(li);
+    const o = document.createElement("option"); o.value = ch.id; o.textContent = (i + 1) + ". " + title;
+    mnav.lastElementChild.appendChild(o);
+  });
+  mnav.addEventListener("change", () => go(mnav.value, true));
+  function go(id, push) {
+    const idx = Math.max(0, chapters.findIndex(c => c.id === id));
+    chapters.forEach((c, i) => { c.hidden = i !== idx; });
+    rail.querySelectorAll("button[data-id]").forEach(b => b.setAttribute("aria-current", b.dataset.id === chapters[idx].id ? "true" : "false"));
+    mnav.value = chapters[idx].id;
+    const prev = chapters[idx - 1], next = chapters[idx + 1];
+    pager.innerHTML = "";
+    if (prev) pager.appendChild(pagerBtn(prev, "Previous", ""));
+    if (next) pager.appendChild(pagerBtn(next, "Next", "nx"));
+    if (push && location.hash.slice(1) !== chapters[idx].id) history.replaceState(null, "", "#" + chapters[idx].id);
+    try { localStorage.setItem("idx-guide-ch", chapters[idx].id); } catch (e) {}
+    window.scrollTo(0, 0);
+    reAll();
+  }
+  function pagerBtn(ch, label, cls) {
+    const b = document.createElement("button"); b.type = "button"; if (cls) b.className = cls;
+    b.innerHTML = "<small>" + label + "</small><span>" + esc(ch.dataset.title) + "</span>";
+    b.addEventListener("click", () => go(ch.id, true));
+    return b;
+  }
+  window.addEventListener("hashchange", () => { const h = location.hash.slice(1); if (chapters.some(c => c.id === h)) go(h, false); });
+
+  // ---------- theme
+  const redraws = [];
+  const reAll = () => redraws.forEach(f => f());
+  const root = document.documentElement;
+  const effDark = () => { const t = root.getAttribute("data-theme"); return t ? t === "dark" : !!(window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches); };
+  const tbtns = document.querySelectorAll(".tbtn");
+  const labelTheme = () => tbtns.forEach(b => { b.textContent = effDark() ? "☀ Light mode" : "☾ Dark mode"; });
+  try { const t = localStorage.getItem("idx-guide-theme"); if (t) root.setAttribute("data-theme", t); } catch (e) {}
+  labelTheme();
+  tbtns.forEach(b => b.addEventListener("click", () => {
+    const t = effDark() ? "light" : "dark"; root.setAttribute("data-theme", t);
+    try { localStorage.setItem("idx-guide-theme", t); } catch (e) {}
+    labelTheme();
+  }));
+
+  // ---------- reading time + on-this-page chips
+  chapters.forEach(ch => {
+    const words = ch.textContent.trim().split(/\s+/).length;
+    const ey = ch.querySelector(".eyebrow"); if (ey) ey.textContent += " · " + Math.max(1, Math.round(words / 220)) + " min read";
+    const hs = ch.querySelectorAll("h2");
+    if (hs.length > 2) {
+      const nav = document.createElement("nav"); nav.className = "toc"; nav.setAttribute("aria-label", "On this page");
+      hs.forEach((h, i) => {
+        h.id = ch.id + "-s" + i;
+        const a = document.createElement("a"); a.href = "#" + h.id; a.textContent = h.textContent;
+        a.addEventListener("click", e => { e.preventDefault(); h.scrollIntoView({ behavior: "smooth", block: "start" }); });
+        nav.appendChild(a);
+      });
+      ch.querySelector(".lede").after(nav);
+    }
+  });
+
+  // ---------- progress + keyboard
+  addEventListener("scroll", () => { const m = document.documentElement.scrollHeight - innerHeight; $("prog").style.width = (m > 0 ? 100 * scrollY / m : 0) + "%"; }, { passive: true });
+  addEventListener("keydown", e => {
+    if (e.altKey || e.ctrlKey || e.metaKey || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+    const i = chapters.findIndex(c => !c.hidden);
+    if (e.key === "ArrowRight" && chapters[i + 1]) go(chapters[i + 1].id, true);
+    if (e.key === "ArrowLeft" && chapters[i - 1]) go(chapters[i - 1].id, true);
+  });
+
+  // ---------- ch1 flow info
+  let flowTarget = null;
+  document.querySelectorAll(".flow .node[role=button]").forEach(n => {
+    const pick = () => {
+      document.querySelectorAll(".flow .node.sel").forEach(x => x.classList.remove("sel"));
+      n.classList.add("sel"); $("flowTxt").textContent = n.textContent + ": " + n.dataset.info;
+      flowTarget = n.dataset.ch; $("flowGo").hidden = false;
+    };
+    n.addEventListener("click", pick);
+    n.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+  });
+  $("flowGo").addEventListener("click", () => { if (flowTarget) go(flowTarget, true); });
+
+  // ---------- sample resume
+  const RESUME = [
+    "ARJUN MEHTA",
+    "Senior Backend Engineer · Pune, India · arjun.mehta@example.com · +91 90000 00000",
+    "",
+    "SUMMARY",
+    "Backend engineer with 7 years building payment and logistics platforms in Go and Python. Led migration of 40 services to Kubernetes and mentors a team of four.",
+    "",
+    "TECHNICAL SKILLS",
+    "Languages: Go, Python, SQL, C++",
+    "Cloud & DevOps: AWS (EKS, Lambda, S3), Kubernetes, Terraform, GitHub Actions",
+    "Data: PostgreSQL, Redis, Kafka, Elasticsearch",
+    "",
+    "PROFESSIONAL EXPERIENCE",
+    "Senior Backend Engineer, PayNova | Pune | Jan 2021 – Present",
+    "- Led migration of 40 microservices from EC2 to EKS, cutting infra cost by 32%.",
+    "- Designed an idempotent payment retry service handling 1.2M transactions/day in Go.",
+    "- Mentored 4 engineers and ran weekly design reviews.",
+    "Backend Engineer, ShipKart | Bengaluru | Jul 2018 – Dec 2020",
+    "- Built route-optimisation APIs in Python (FastAPI) serving 300 requests/second.",
+    "- Introduced a Kafka event pipeline replacing nightly batch jobs.",
+    "Software Engineer Intern, DataLeaf | Jan 2018 – Jun 2018",
+    "- Wrote ETL scripts in Python for client reporting.",
+    "",
+    "PROJECTS",
+    "OpenTrace | 2022 – Present",
+    "- Open-source distributed tracing sidecar in Go with 1.1k GitHub stars.",
+    "",
+    "EDUCATION",
+    "B.E. Computer Engineering, University of Pune, 2018 (CGPA 8.4/10)",
+    "",
+    "CERTIFICATIONS",
+    "Certified Kubernetes Administrator (CKA), 2022",
+    "AWS Solutions Architect – Associate, 2021"
+  ].join("\n");
+
+  const tok = s => Math.round(s.trim().split(/\s+/).filter(Boolean).length * 1.3);
+
+  const SYN = {
+    contact: ["contact", "contact information", "personal details", "personal information"],
+    summary: ["summary", "professional summary", "profile", "about me", "objective", "career objective", "overview"],
+    skills: ["skills", "technical skills", "core competencies", "key skills", "technologies", "tech stack", "tools"],
+    experience: ["experience", "professional experience", "work experience", "work history", "employment", "employment history", "career history"],
+    projects: ["projects", "key projects", "personal projects", "open source"],
+    education: ["education", "academic background", "qualifications", "academics"],
+    certifications: ["certifications", "certificates", "licenses", "licenses & certifications", "licences"],
+    other: ["awards", "achievements", "honors", "honours", "publications", "languages", "interests", "volunteering"]
+  };
+  const canon = h => {
+    const k = h.toLowerCase().replace(/[:\s]+$/, "").trim();
+    for (const c in SYN) if (SYN[c].includes(k)) return c;
+    return null;
+  };
+  const DATE_RE = /\b(19|20)\d{2}\b/;
+  const isHeading = t => {
+    t = t.trim();
+    if (!t || t.length > 40 || /^[-•*]/.test(t)) return false;
+    if (canon(t)) return true;
+    const w = t.split(/\s+/).length;
+    return w <= 4 && /[A-Z]/.test(t) && t === t.toUpperCase() && !DATE_RE.test(t);
+  };
+  function detectSections(text) {
+    const lines = text.split("\n");
+    const out = [{ title: "(top of page)", canon: "contact", lines: [] }];
+    lines.forEach((ln, i) => {
+      if (i > 0 && isHeading(ln)) out.push({ title: ln.trim(), canon: canon(ln), lines: [] });
+      else if (ln.trim()) out[out.length - 1].lines.push(ln);
+    });
+    out.forEach(s => { s.body = s.lines.join("\n"); s.tokens = tok(s.body); });
+    return out.filter(s => s.lines.length || s.canon !== "contact");
+  }
+  const isEntryHeader = ln => DATE_RE.test(ln) && !/^\s*[-•*]/.test(ln);
+  function entries(sec) {
+    const ents = []; let cur = null;
+    sec.lines.forEach(ln => {
+      if (isEntryHeader(ln)) { cur = { header: ln.trim(), lines: [ln] }; ents.push(cur); }
+      else if (cur) cur.lines.push(ln);
+      else { cur = { header: "", lines: [ln] }; ents.push(cur); }
+    });
+    return ents;
+  }
+
+  // ---------- ch4 parser router
+  function route() {
+    const docx = $("rDocx").checked, scan = $("rScan").checked, cols = $("rCols").checked,
+          tables = $("rTables").checked, gfx = $("rGfx").checked, gpu = $("rGpu").checked;
+    let steps = [], note = "", time = "", risk = "";
+    if (docx) {
+      steps = [["Inspect", "ok"], ["Docling (DOCX)", "cur"], ["Validate", "ok"], ["Markdown", "ok"]];
+      note = "DOCX already carries heading styles and reading order. Docling (or python-docx) converts it directly, no OCR or layout model needed. Watch for headings that are only bold text.";
+      time = "~0.3 s"; risk = "low";
+    } else if (scan) {
+      steps = [["Inspect: no text layer", "warn"], ["Docling + OCR (Tesseract / RapidOCR)", "cur"], ["Validate OCR confidence", "ok"]];
+      if (gfx) steps.push(["VLM fallback (Qwen2.5-VL)", "warn"]);
+      steps.push(["Markdown", "ok"]);
+      note = "No text layer, so OCR is required. Docling runs OCR inside its layout pipeline so you still get headings and reading order. Check dates and numbers: OCR confuses 0/O and 1/l." + (gfx ? " Designed graphics make OCR unreliable, so low-confidence pages escalate to the vision model." : "");
+      time = gfx ? (gpu ? "3–8 s" : "20–60 s") : "1–3 s"; risk = gfx ? "high" : "medium";
+    } else if (cols || tables) {
+      steps = [["Inspect: " + (cols ? "2 columns" : "tables"), "warn"], ["Docling layout model", "cur"], ["Validate sections", "ok"]];
+      if (gfx) steps.push(["VLM fallback if invalid", "warn"]);
+      steps.push(["Markdown", "ok"]);
+      note = "A layout model detects the columns" + (tables ? " and tables" : "") + " and emits text in reading order, so the sidebar does not bleed into job descriptions. pymupdf4llm often handles simple two-column pages too; the router prefers safety." + (gfx ? " Skill bars carry information only visually: only a vision model can read '4 of 5'." : "");
+      time = gfx ? (gpu ? "2–6 s" : "1–5 s, +30 s if VLM") : "1–5 s"; risk = gfx ? "medium" : "low–medium";
+    } else {
+      steps = [["Inspect: digital, 1 column", "ok"], ["pymupdf4llm (fast path)", "cur"], ["Validate sections", "ok"], ["Markdown", "ok"]];
+      note = "The common case. Text layer present and a simple layout: the fast layout-aware library is accurate and takes milliseconds." + (gfx ? " Icons are usually harmless; skill bars still lose their level." : "");
+      time = "~20 ms"; risk = gfx ? "low–medium" : "low";
+    }
+    $("routeChain").innerHTML = steps.map((s, i) => (i ? '<span class="arr">→</span>' : "") + '<span class="st ' + s[1] + '">' + esc(s[0]) + "</span>").join("");
+    $("routeNote").textContent = note; $("routeTime").textContent = time; $("routeRisk").textContent = risk;
+  }
+  ["rDocx", "rScan", "rCols", "rTables", "rGfx", "rGpu"].forEach(id => $(id).addEventListener("change", route));
+  route();
+
+  // ---------- ch5 formats
+  const FMT = {
+    "Plain text": {
+      out: "ARJUN MEHTA Senior Backend Engineer · Pune, India\nSUMMARY Backend engineer with 7 years building payment and\nlogistics platforms in Go and Python.\nPROFESSIONAL EXPERIENCE Senior Backend Engineer, PayNova | Pune |\nJan 2021 – Present Led migration of 40 microservices from EC2 to\nEKS, cutting infra cost by 32%. Designed an idempotent payment ...",
+      note: "Easy to get, but headings are just words and bullets are gone. Section detection has to guess where 'PROFESSIONAL EXPERIENCE' ends."
+    },
+    "Markdown": {
+      out: "# Arjun Mehta\nSenior Backend Engineer · Pune, India\n\n## Summary\nBackend engineer with 7 years building payment and logistics\nplatforms in Go and Python.\n\n## Professional Experience\n### Senior Backend Engineer, PayNova | Pune | Jan 2021 – Present\n- Led migration of 40 microservices from EC2 to EKS, cutting infra cost by 32%.\n- Designed an idempotent payment retry service handling 1.2M transactions/day in Go.",
+      note: "Chosen as the canonical text. Headings give sections and entries for free, bullets survive, and both humans and LLMs read it easily."
+    },
+    "HTML": {
+      out: "<section class=\"experience\">\n  <h2>Professional Experience</h2>\n  <div class=\"job\">\n    <h3>Senior Backend Engineer, <span class=\"org\">PayNova</span></h3>\n    <span class=\"dates\">Jan 2021 – Present</span>\n    <ul><li>Led migration of 40 microservices from EC2 to EKS ...</li>\n    ...",
+      note: "Rich structure, but most of the tokens are tags. Useful only if your parser outputs it; convert to Markdown before chunking."
+    },
+    "JSON profile": {
+      out: "{\n  \"headline\": \"Senior Backend Engineer\",\n  \"total_yoe\": 7.8,\n  \"experiences\": [{\n    \"title\": \"Senior Backend Engineer\", \"company\": \"PayNova\",\n    \"start\": \"2021-01\", \"end\": null,\n    \"skills\": [\"Kubernetes\", \"AWS EKS\", \"Go\"]\n  }],\n  \"certifications\": [{\"name\": \"CKA\", \"year\": 2022}]\n}",
+      note: "Chosen alongside Markdown. Perfect for filters ('5+ years', 'has CKA') and exact facts, but the narrative ('cutting infra cost by 32%') does not fit a field, so it cannot replace the text."
+    },
+    "Direct vector": {
+      out: "resume_vector(arjun_mehta.pdf) =\n[ 0.021, -0.113, 0.064, 0.087, -0.019, ... 384 numbers ]\n\none vector for: Go + Python + payments + logistics + Kubernetes +\nmentoring + B.E. + CKA + AWS + ...",
+      note: "No parsing at all, but nothing to cite, no keyword search, no filters, and a blurred average of every topic. Useful as an extra 'profile vector' for JD similarity, not as the main index."
+    }
+  };
+  const fmtChips = $("fmtChips"); let fmtCur = "Markdown";
+  Object.keys(FMT).forEach(k => {
+    const c = document.createElement("button"); c.type = "button"; c.className = "chip"; c.textContent = k; c.setAttribute("role", "tab");
+    c.addEventListener("click", () => { fmtCur = k; renderFmt(); }); fmtChips.appendChild(c);
+  });
+  function renderFmt() {
+    fmtChips.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-selected", c.textContent === fmtCur ? "true" : "false"));
+    $("fmtOut").textContent = FMT[fmtCur].out; $("fmtNote").textContent = FMT[fmtCur].note;
+  }
+  renderFmt();
+
+  // ---------- ch6 section detector
+  function renderSect() {
+    const secs = detectSections($("sSrc").value);
+    const known = secs.filter(s => s.canon), unk = secs.filter(s => !s.canon);
+    const total = secs.reduce((a, s) => a + s.tokens, 0) || 1;
+    const cov = known.reduce((a, s) => a + s.tokens, 0) / total;
+    $("sCount").textContent = known.length + " known";
+    $("sUnk").textContent = unk.length;
+    $("sCov").textContent = Math.round(cov * 100) + "%";
+    const needLLM = known.filter(s => s.canon !== "contact").length < 3 || unk.length > 0;
+    $("sAct").textContent = needLLM ? "LLM fallback" : "rules OK";
+    $("sOut").innerHTML = secs.map(s => {
+      const lab = s.canon ? '<span class="flag y">' + s.canon + "</span>" : '<span class="flag n">unknown → fuzzy / LLM</span>';
+      return '<div class="srow"><span class="t">' + esc(s.title) + '</span><span>' + lab + '</span><span class="v">' + s.tokens + " tok</span></div>";
+    }).join("");
+  }
+  $("sSrc").value = RESUME;
+  $("sSrc").addEventListener("input", renderSect);
+  $("sReset").addEventListener("click", () => { $("sSrc").value = RESUME; renderSect(); });
+  renderSect();
+
+  // ---------- ch7 YOE timeline
+  const JOBS = [
+    { name: "PayNova (senior)", s: 2021 + 0 / 12, e: 2026 + 9 / 12, kind: "job" },
+    { name: "ShipKart", s: 2018 + 6 / 12, e: 2021 + 0 / 12, kind: "job" },
+    { name: "DataLeaf (intern)", s: 2018 + 0 / 12, e: 2018 + 6 / 12, kind: "intern" },
+    { name: "Freelance API work", s: 2020 + 2 / 12, e: 2021 + 8 / 12, kind: "free" }
+  ];
+  function renderYoe() {
+    const jobs = JOBS.filter(j => (j.kind !== "intern" || $("yIntern").checked) && (j.kind !== "free" || $("yFree").checked));
+    const sum = jobs.reduce((a, j) => a + (j.e - j.s), 0);
+    const iv = jobs.map(j => [j.s, j.e]).sort((a, b) => a[0] - b[0]);
+    const merged = [];
+    iv.forEach(x => { const l = merged[merged.length - 1]; if (l && x[0] <= l[1]) l[1] = Math.max(l[1], x[1]); else merged.push(x.slice()); });
+    const uni = merged.reduce((a, m) => a + (m[1] - m[0]), 0);
+    let gaps = 0; for (let i = 1; i < merged.length; i++) if (merged[i][0] - merged[i - 1][1] > 0.25) gaps++;
+    $("ySum").textContent = sum.toFixed(1) + " y"; $("yUnion").textContent = uni.toFixed(1) + " y";
+    $("yOver").textContent = "+" + (sum - uni).toFixed(1) + " y"; $("yGap").textContent = gaps;
+    const x0 = 2017.5, x1 = 2027, L = 130, R = 625, X = v => L + (v - x0) / (x1 - x0) * (R - L);
+    let h = "";
+    for (let y = 2018; y <= 2026; y++) h += '<line x1="' + X(y) + '" x2="' + X(y) + '" y1="10" y2="170" class="s-line" stroke-width="1"/><text x="' + X(y) + '" y="190" text-anchor="middle">' + y + "</text>";
+    JOBS.forEach((j, i) => {
+      const on = jobs.includes(j), y = 18 + i * 30;
+      const cls = j.kind === "free" ? "f-fused" : j.kind === "intern" ? "f-sparse" : "f-dense";
+      h += '<text x="4" y="' + (y + 13) + '" class="lbl">' + esc(j.name) + "</text>";
+      h += '<rect x="' + X(j.s) + '" y="' + y + '" width="' + (X(j.e) - X(j.s)) + '" height="18" rx="4" class="' + cls + '" opacity="' + (on ? 1 : .18) + '"/>';
+    });
+    const yy = 18 + 4 * 30;
+    h += '<text x="4" y="' + (yy + 13) + '" class="lbl">Union</text>';
+    merged.forEach(m => { h += '<rect x="' + X(m[0]) + '" y="' + yy + '" width="' + (X(m[1]) - X(m[0])) + '" height="18" rx="4" class="f-ok"/>'; });
+    $("yoeSvg").innerHTML = h;
+  }
+  ["yIntern", "yFree"].forEach(id => $(id).addEventListener("change", renderYoe));
+  renderYoe();
+
+  // ---------- ch8 chunking strategies
+  const Q_EV = /kubernetes|\beks\b/i, Q_CTX = /paynova/i;
+  function chunkFixed(text, n) {
+    const words = text.split(/\s+/).filter(Boolean), size = Math.round(n / 1.3), step = Math.round(size * 0.85), out = [];
+    for (let i = 0; i < words.length; i += step) { out.push({ path: "window " + (out.length + 1), text: words.slice(i, i + size).join(" ") }); if (i + size >= words.length) break; }
+    return out;
+  }
+  function chunkRecursive(text, max) {
+    const blocks = text.split(/\n\s*\n/), out = []; let cur = [];
+    const flush = () => { if (cur.length) { out.push({ path: "block group " + (out.length + 1), text: cur.join("\n") }); cur = []; } };
+    blocks.forEach(b => {
+      const parts = tok(b) > max ? b.split("\n") : [b];
+      parts.forEach(p => { if (tok(cur.concat(p).join("\n")) > max) flush(); cur.push(p); });
+    });
+    flush(); return out;
+  }
+  function chunkSection(text) {
+    return detectSections(text).filter(s => s.canon !== "contact").map(s => ({ path: s.canon || s.title, text: s.body }));
+  }
+  function chunkEntry(text) {
+    const out = [], secs = detectSections(text), who = "Candidate C12";
+    secs.forEach(s => {
+      if (s.canon === "contact") return;
+      if (s.canon === "experience" || s.canon === "projects") {
+        entries(s).forEach(e => {
+          const hdr = e.header ? e.header.replace(/\s*\|\s*/g, " | ") : "";
+          out.push({ path: s.canon + " › " + (hdr.split("|")[0] || "entry").trim(), prefix: who + " | " + s.canon + " > " + hdr, text: e.lines.filter(l => l.trim() !== e.header).join("\n") });
+        });
+      } else out.push({ path: s.canon || s.title, prefix: who + " | " + (s.canon || s.title), text: s.body });
+    });
+    return out;
+  }
+  const STRATS = {
+    "Fixed 60 tok": { f: t => chunkFixed(t, 60), note: "Windows ignore structure. The EKS bullet may land in a window without 'PayNova', and windows mix the end of one job with the start of the next." },
+    "Recursive 120": { f: t => chunkRecursive(t, 120), note: "Better: blank lines and line breaks are respected. But a block group can still hold two different jobs, and nothing labels which job a line belongs to." },
+    "Section": { f: chunkSection, note: "One chunk per section. Clean, but Experience holds every job in one chunk: its vector averages payments, logistics and an internship." },
+    "Section + entry (chosen)": { f: chunkEntry, note: "Each job is its own chunk, and the prefix carries candidate, section, company and dates. The PayNova chunk answers the question on its own; the Summary line has evidence but no company, which is exactly why entries matter." },
+    "Whole resume": { f: t => [{ path: "entire resume", text: t }], note: "One chunk contains everything, so it 'answers' every question but cannot point to a line, and its single vector is a blur of all topics." }
+  };
+  const ckChips = $("ckChips"); let ckCur = "Section + entry (chosen)";
+  Object.keys(STRATS).forEach(k => {
+    const c = document.createElement("button"); c.type = "button"; c.className = "chip"; c.textContent = k; c.setAttribute("role", "tab");
+    c.addEventListener("click", () => { ckCur = k; renderChunks(); }); ckChips.appendChild(c);
+  });
+  function renderChunks() {
+    ckChips.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-selected", c.textContent === ckCur ? "true" : "false"));
+    const chunks = STRATS[ckCur].f(RESUME);
+    let ev = 0, self = 0, sumT = 0;
+    $("ckOut").innerHTML = chunks.map(c => {
+      const full = (c.prefix ? c.prefix + "\n" : "") + c.text, t = tok(full); sumT += t;
+      const hasEv = Q_EV.test(full), hasCtx = Q_CTX.test(full), ok = hasEv && hasCtx;
+      if (hasEv) ev++; if (ok) self++;
+      return '<div class="ck' + (ok ? " hit" : "") + '"><div class="hd"><span class="path">' + esc(c.path) + '</span><span class="meta">' + t + " tok</span></div>" +
+        "<pre>" + (c.prefix ? '<b style="color:var(--fused)">' + esc(c.prefix) + "</b>\n" : "") + esc(c.text) + "</pre>" +
+        '<div class="flags"><span class="flag ' + (hasEv ? "y" : "") + '">evidence ' + (hasEv ? "✓" : "–") + '</span><span class="flag ' + (hasEv ? (hasCtx ? "y" : "n") : "") + '">company ' + (hasCtx ? "✓" : "–") + "</span></div></div>";
+    }).join("");
+    $("ckN").textContent = chunks.length; $("ckAvg").textContent = Math.round(sumT / chunks.length);
+    $("ckEv").textContent = ev; $("ckSelf").textContent = self; $("ckNote").textContent = STRATS[ckCur].note;
+  }
+  renderChunks();
+
+  // ---------- ch9 adaptive budgets
+  function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  const TYPES = { summary: [60, .4, 1], skills: [85, .45, 1], experience: [190, .55, 3], projects: [110, .5, .6], education: [40, .35, 1], certifications: [30, .4, .5] };
+  function corpus(sen) {
+    const r = rng(42), scale = sen === "grad" ? .6 : sen === "senior" ? 1.6 : 1, units = [];
+    const gauss = () => { let u = 0, v = 0; while (!u) u = r(); while (!v) v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+    for (let i = 0; i < 40; i++) for (const ty in TYPES) {
+      const [m, sd, n] = TYPES[ty];
+      let k = n >= 1 ? Math.max(1, Math.round(n * (ty === "experience" ? scale : 1) + gauss())) : (r() < n ? 1 : 0);
+      if (ty === "experience" && sen === "grad") k = Math.max(1, Math.min(k, 2));
+      for (let j = 0; j < k; j++) units.push({ ty, len: Math.max(8, Math.round(m * (ty === "experience" || ty === "projects" || ty === "summary" ? scale : 1) * Math.exp(sd * gauss()))) });
+    }
+    return units;
+  }
+  const pct = (a, p) => { const s = a.slice().sort((x, y) => x - y), i = (p / 100) * (s.length - 1), lo = Math.floor(i), hi = Math.ceil(i); return s[lo] + (s[hi] - s[lo]) * (i - lo); };
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  function renderAdapt() {
+    const lo = +$("aLo").value, hi = +$("aHi").value, lim = +$("aLim").value, sen = $("aSen").value;
+    $("aLoO").textContent = "p" + lo; $("aHiO").textContent = "p" + hi;
+    const units = corpus(sen), L = units.map(u => u.len), cap = lim - 32;
+    const minT = Math.round(clamp(pct(L, lo), 64, 128)), maxT = Math.round(clamp(pct(L, hi), Math.min(256, cap), cap));
+    let m = 0, k = 0, s = 0, chunks = 0;
+    units.forEach(u => { if (u.len < minT) m++; else if (u.len > maxT) { s++; chunks += Math.ceil(u.len / (maxT * 0.9)); } else { k++; chunks++; } });
+    chunks += Math.ceil(m / 2);
+    $("aMin").textContent = minT; $("aMax").textContent = maxT; $("aMks").textContent = m + " / " + k + " / " + s; $("aChunks").textContent = chunks + " (from " + units.length + ")";
+    const W = 520, H = 300, pl = 40, pr = 12, pt = 14, pb = 34, xmax = 1200, bw = 25, nb = xmax / bw;
+    const bins = new Array(nb).fill(0); L.forEach(v => { bins[Math.min(nb - 1, Math.floor(v / bw))]++; });
+    const ymax = Math.max(...bins), X = v => pl + v / xmax * (W - pl - pr), Y = v => H - pb - v / ymax * (H - pt - pb);
+    let h = "";
+    for (let g = 0; g <= 4; g++) { const v = Math.round(ymax * g / 4); h += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + Y(v) + '" y2="' + Y(v) + '" class="s-line" stroke-width="1"/><text x="' + (pl - 6) + '" y="' + (Y(v) + 4) + '" text-anchor="end">' + v + "</text>"; }
+    bins.forEach((c, i) => { if (!c) return; const mid = (i + .5) * bw, cls = mid < minT ? "f-sparse" : mid > maxT ? "f-fused" : "f-dense"; h += '<rect x="' + (X(i * bw) + 1) + '" y="' + Y(c) + '" width="' + (X(bw) - pl - 2) + '" height="' + (H - pb - Y(c)) + '" rx="2" class="' + cls + '"/>'; });
+    for (let t = 0; t <= xmax; t += 200) h += '<text x="' + X(t) + '" y="' + (H - pb + 16) + '" text-anchor="middle">' + t + "</text>";
+    h += '<text x="' + (W - pr) + '" y="' + (H - 4) + '" text-anchor="end">tokens per unit →</text>';
+    [[minT, "min " + minT], [maxT, "max " + maxT]].forEach(([v, l]) => { if (v <= xmax) h += '<line x1="' + X(v) + '" x2="' + X(v) + '" y1="' + pt + '" y2="' + (H - pb) + '" class="s-ink" stroke-width="2" stroke-dasharray="5 4"/><text x="' + (X(v) + 4) + '" y="' + (pt + 10) + '" class="lbl">' + l + "</text>"; });
+    $("adSvg").innerHTML = h;
+    let rows = '<div class="tbl"><table><tr><th>Section type</th><th>units</th><th>p' + lo + '</th><th>p' + hi + '</th><th>per-type max</th></tr>';
+    for (const ty in TYPES) {
+      const a = units.filter(u => u.ty === ty).map(u => u.len); if (!a.length) continue;
+      rows += "<tr><td>" + ty + '</td><td class="num">' + a.length + '</td><td class="num">' + Math.round(pct(a, lo)) + '</td><td class="num">' + Math.round(pct(a, hi)) + '</td><td class="num">' + Math.round(clamp(pct(a, hi), Math.min(128, cap), cap)) + "</td></tr>";
+    }
+    $("adTbl").innerHTML = rows + "</table></div>";
+  }
+  ["aLo", "aHi", "aLim", "aSen"].forEach(id => $(id).addEventListener("input", renderAdapt));
+  renderAdapt();
+
+  // ---------- ch11 memory calculator
+  const fmtB = b => b >= 1e9 ? (b / 1e9).toFixed(2) + " GB" : b >= 1e6 ? (b / 1e6).toFixed(1) + " MB" : (b / 1e3).toFixed(0) + " KB";
+  function renderMem() {
+    const R = Math.round(Math.pow(10, +$("mR").value)), C = +$("mC").value, d = +$("mD").value, N = R * C;
+    $("mRO").textContent = R.toLocaleString(); $("mCO").textContent = C;
+    const fp = N * d * 4, i8 = N * d, txt = N * 1500, ms = N * d / 4e9 * 1000;
+    const rows = [["vectors (float32)", fp, ""], ["vectors (int8)", i8, "s"], ["chunk text + metadata", txt, "f"]];
+    const mx = Math.max(fp, txt);
+    $("mBars").innerHTML = rows.map(r => '<div class="brow"><span>' + r[0] + '</span><div class="track"><i class="' + r[2] + '" style="width:' + Math.max(1, r[1] / mx * 100) + '%"></i></div><span class="v">' + fmtB(r[1]) + "</span></div>").join("") +
+      '<div class="brow"><span>flat search / query</span><div class="track"><i class="k" style="width:' + Math.min(100, Math.max(1, ms / 50 * 100)) + '%"></i></div><span class="v">' + (ms < 1 ? ms.toFixed(2) : ms.toFixed(0)) + " ms</span></div>";
+    $("mRec").textContent = N.toLocaleString() + " chunks. " + (N < 2e5 ? "Exact (flat) search in memory is fast and has perfect recall. Persist to disk and load at startup." : N < 5e6 ? "Consider HNSW (FAISS, Qdrant, pgvector) to keep query latency low; recall stays around 95–99%." : "Use a server or managed vector DB with ANN and quantisation.");
+  }
+  ["mR", "mC", "mD"].forEach(id => $(id).addEventListener("input", renderMem));
+  renderMem();
+
+  // ---------- ch12 tokenizer
+  const PROTECT = ["c++", "c#", "f#", ".net", "asp.net", "node.js", "next.js", "vue.js", "react.js", "ci/cd", "objective-c", "pl/sql"];
+  const ALIAS = { "k8s": "kubernetes", "golang": "go", "postgres": "postgresql", "psql": "postgresql", "js": "javascript", "ts": "typescript", "eks": "eks(+kubernetes,aws)", "node.js": "nodejs", "react.js": "react" };
+  function renderTok() {
+    const s = $("tIn").value;
+    const std = s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+    let rest = " " + s.toLowerCase() + " "; const tech = [];
+    PROTECT.forEach(p => { const re = new RegExp("(^|[\\s,;(])" + p.replace(/[.*+?^${}()|[\]\\/#]/g, "\\$&") + "(?=$|[\\s,;)])", "g"); if (re.test(rest)) { tech.push(p); rest = rest.replace(re, "$1 "); } });
+    rest.split(/[^a-z0-9+#]+/).filter(Boolean).forEach(w => tech.push(w));
+    const techA = tech.map(t => ALIAS[t] || t);
+    const lost = PROTECT.filter(p => tech.includes(p));
+    $("tStd").innerHTML = std.map(t => '<span class="tk' + (["c", "net", "js", "node", "ci", "cd"].includes(t) && lost.length ? " lost" : "") + '">' + esc(t) + "</span>").join("");
+    $("tTech").innerHTML = techA.map((t, i) => '<span class="tk' + (PROTECT.includes(tech[i]) || ALIAS[tech[i]] ? " kept" : "") + '">' + esc(t) + "</span>").join("");
+    $("tNote").textContent = lost.length ? "Destroyed by the standard tokenizer: " + lost.join(", ") + ". A search for one would match the others. The tech-aware tokenizer keeps them and maps aliases (k8s → kubernetes, golang → go) using the same dictionary as skill normalisation." : "No protected terms in this text. Try adding C#, .NET or Node.js.";
+  }
+  $("tIn").addEventListener("input", renderTok);
+  renderTok();
+
+  // ---------- ch15 checklist
+  const cl = $("exitList"), items = Array.from(cl.querySelectorAll("li"));
+  let done = []; try { done = JSON.parse(localStorage.getItem("idx-guide-exit") || "[]"); } catch (e) {}
+  const cp = document.createElement("div"); cp.className = "cprog"; cp.innerHTML = '<span id="cpT"></span><div class="track"><i class="k" id="cpB" style="width:0"></i></div>'; cl.before(cp);
+  function renderCl() {
+    items.forEach((li, i) => li.classList.toggle("done", done.includes(i)));
+    $("cpT").textContent = done.length + " / " + items.length; $("cpB").style.width = (100 * done.length / items.length) + "%";
+  }
+  items.forEach((li, i) => {
+    li.tabIndex = 0; li.setAttribute("role", "checkbox");
+    const t = () => { done = done.includes(i) ? done.filter(x => x !== i) : done.concat(i); try { localStorage.setItem("idx-guide-exit", JSON.stringify(done)); } catch (e) {} renderCl(); li.setAttribute("aria-checked", done.includes(i)); };
+    li.addEventListener("click", t); li.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); t(); } });
+  });
+  renderCl();
+
+  // ---------- start
+  let start = location.hash.slice(1);
+  if (!chapters.some(c => c.id === start)) { start = ""; try { start = localStorage.getItem("idx-guide-ch") || ""; } catch (e) {} }
+  go(start || chapters[0].id, false);
+})();
+</script>

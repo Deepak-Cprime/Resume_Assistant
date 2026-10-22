@@ -1,0 +1,35 @@
+use_case: resume
+paths:
+  data_dir: data
+  db: data/app.db
+ingestion:
+  max_file_mb: 10
+  max_pages: 10
+parser:
+  default: pymupdf4llm
+  fallback: docling
+  ocr: tesseract
+  vlm_fallback: {enabled: false, model: "qwen2.5vl:7b"}
+  min_chars_per_page: 50
+llm:
+  provider: ollama
+  model: "qwen2.5:7b"
+  temperature: 0
+embedding:
+  models:
+    - {provider: sentence_transformers, name: BAAI/bge-small-en-v1.5}
+    - {provider: sentence_transformers, name: BAAI/bge-m3}
+  default: BAAI/bge-small-en-v1.5
+chunking:
+  strategy: section_entry
+  budgets:
+    mode: adaptive_per_section
+    p_low: 20
+    p_high: 90
+    min_clamp: [64, 128]
+    max_clamp: [256, null]
+    prefix_reserve: 32
+vector_store: {provider: faiss, index: flat_ip}
+keyword: {provider: bm25s, tokenizer: tech_aware}
+logging:
+  level: INFO
