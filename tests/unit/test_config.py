@@ -12,6 +12,8 @@ def test_default_config_loads():
     assert [m.name for m in s.embedding.models] == ["BAAI/bge-small-en-v1.5", "BAAI/bge-m3"]
     assert s.chunking.budgets.prefix_reserve == 32
     assert s.chunking.budgets.max_clamp == (256, None)
+    assert (s.metadata.use_llm, s.metadata.as_of, s.metadata.gap_months) == (False, None, 3)
+    assert s.parser.fallback is None and s.parser.docx == "python_docx"
 
 
 def test_relative_paths_anchor_at_project_root():

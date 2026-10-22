@@ -214,7 +214,11 @@ def list_documents(conn: sqlite3.Connection, status: str | None = None) -> list[
 
 
 def set_document_status(
-    conn: sqlite3.Connection, doc_id: str, status: str, error: str | None = None, **fields: str
+    conn: sqlite3.Connection,
+    doc_id: str,
+    status: str,
+    error: str | None = None,
+    **fields: str | int | None,
 ) -> None:
     """Validate the transition and update the row. Extra `fields` may be parser,
     parser_version, markdown_path or candidate_id."""
@@ -236,3 +240,85 @@ def set_document_status(
 def status_counts(conn: sqlite3.Connection) -> dict[str, int]:
     rows = conn.execute("SELECT status, COUNT(*) AS n FROM documents GROUP BY status").fetchall()
     return {r["status"]: r["n"] for r in rows}
+
+
+# --- candidates and their extracted metadata -------------------------------------------
+
+
+def upsert_candidate_profile(
+    conn: sqlite3.Connection,
+    *,
+    display_name: str,
+    email_hash: str,
+    headline: str,
+    total_yoe: float,
+    seniority: str,
+    experiences: list[dict],
+    skills: list[dict],
+    certifications: list[dict],
+) -> int:
+    """Create the candidate (or, when the email hash matches one, refresh it) and replace its
+    experiences, skills and certifications in one transaction. Returns the candidate id."""
+    with transaction(conn):
+        row = (
+            conn.execute(
+                "SELECT candidate_id FROM candidates WHERE email_hash = ?", (email_hash,)
+            ).fetchone()
+            if email_hash
+            else None
+        )
+        if row is None:
+            cur = conn.execute(
+                "INSERT INTO candidates (display_name, email_hash, headline, total_yoe, seniority)"
+                " VALUES (?, ?, ?, ?, ?)",
+                (display_name, email_hash or None, headline, total_yoe, seniority),
+            )
+            candidate_id = int(cur.lastrowid)
+        else:
+            candidate_id = int(row["candidate_id"])
+            conn.execute(
+                "UPDATE candidates SET display_name = ?, headline = ?, total_yoe = ?, "
+                "seniority = ? WHERE candidate_id = ?",
+                (display_name, headline, total_yoe, seniority, candidate_id),
+            )
+            for table in ("experiences", "skills", "certifications"):
+                conn.execute(f"DELETE FROM {table} WHERE candidate_id = ?", (candidate_id,))
+        conn.executemany(
+            "INSERT INTO experiences (candidate_id, title, company, start, end) "
+            "VALUES (?, ?, ?, ?, ?)",
+            [(candidate_id, e["title"], e["company"], e["start"], e["end"]) for e in experiences],
+        )
+        conn.executemany(
+            "INSERT OR REPLACE INTO skills (candidate_id, skill, evidence, years) "
+            "VALUES (?, ?, ?, ?)",
+            [(candidate_id, s["skill"], s["evidence"], s["years"]) for s in skills],
+        )
+        conn.executemany(
+            "INSERT OR REPLACE INTO certifications (candidate_id, name, year) VALUES (?, ?, ?)",
+            [(candidate_id, c["name"], c["year"]) for c in certifications],
+        )
+    return candidate_id
+
+
+def get_candidate(conn: sqlite3.Connection, candidate_id: int) -> sqlite3.Row | None:
+    return conn.execute(
+        "SELECT * FROM candidates WHERE candidate_id = ?", (candidate_id,)
+    ).fetchone()
+
+
+def list_experiences(conn: sqlite3.Connection, candidate_id: int) -> list[sqlite3.Row]:
+    return conn.execute(
+        "SELECT * FROM experiences WHERE candidate_id = ? ORDER BY exp_id", (candidate_id,)
+    ).fetchall()
+
+
+def list_skills(conn: sqlite3.Connection, candidate_id: int) -> list[sqlite3.Row]:
+    return conn.execute(
+        "SELECT * FROM skills WHERE candidate_id = ? ORDER BY skill", (candidate_id,)
+    ).fetchall()
+
+
+def list_certifications(conn: sqlite3.Connection, candidate_id: int) -> list[sqlite3.Row]:
+    return conn.execute(
+        "SELECT * FROM certifications WHERE candidate_id = ? ORDER BY name", (candidate_id,)
+    ).fetchall()

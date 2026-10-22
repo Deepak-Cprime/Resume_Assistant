@@ -32,5 +32,9 @@ chunking:
     prefix_reserve: 32
 vector_store: {provider: faiss, index: flat_ip}
 keyword: {provider: bm25s, tokenizer: tech_aware}
+metadata:
+  use_llm: false            # true = Ollama resolves title/company for ambiguous entries only
+  as_of: null               # date "Present" resolves to; null = today
+  gap_months: 3             # career gaps longer than this are reported
 logging:
   level: INFO

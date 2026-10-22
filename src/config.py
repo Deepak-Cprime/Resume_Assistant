@@ -10,6 +10,7 @@ never from the YAML file.
 from __future__ import annotations
 
 import os
+from datetime import date
 from pathlib import Path
 
 import yaml
@@ -108,6 +109,14 @@ class KeywordConfig(_Section):
     tokenizer: str = "tech_aware"
 
 
+class MetadataConfig(_Section):
+    # Ask the LLM to resolve title/company only for entries the rules could not split.
+    use_llm: bool = False
+    # Date that "Present" resolves to. None = today. Fix it for reproducible YOE in tests.
+    as_of: date | None = None
+    gap_months: int = Field(3, ge=0)
+
+
 class LoggingConfig(_Section):
     level: str = "INFO"
 
@@ -122,6 +131,7 @@ class Settings(_Section):
     chunking: ChunkingConfig = ChunkingConfig()
     vector_store: VectorStoreConfig = VectorStoreConfig()
     keyword: KeywordConfig = KeywordConfig()
+    metadata: MetadataConfig = MetadataConfig()
     logging: LoggingConfig = LoggingConfig()
 
     # Derived directories under paths.data_dir.

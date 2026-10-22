@@ -16,6 +16,14 @@ def markdown_path(settings: Settings, doc_id: str) -> Path:
     return settings.markdown_dir / f"{doc_id}.md"
 
 
+def sections_path(settings: Settings, doc_id: str) -> Path:
+    return settings.profiles_dir / f"{doc_id}.sections.json"
+
+
+def profile_path(settings: Settings, doc_id: str) -> Path:
+    return settings.profiles_dir / f"{doc_id}.json"
+
+
 def write_bytes_atomic(path: Path, data: bytes) -> None:
     """Write via a temp file then rename, so a crash never leaves a half-written file."""
     path.parent.mkdir(parents=True, exist_ok=True)
