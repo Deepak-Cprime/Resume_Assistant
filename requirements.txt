@@ -1,7 +1,9 @@
 pydantic>=2.6
 pyyaml>=6.0
-pymupdf4llm>=0.0.17
-docling>=2.0
+# Pinned below 2.0: pymupdf4llm 2.0 is an empty stub that breaks installs (code moved into
+# pymupdf 2.x, whose API this project has not been tested against).
+pymupdf>=1.24,<2
+pymupdf4llm>=0.0.17,<2
 python-docx>=1.1
 sentence-transformers>=3.0
 faiss-cpu>=1.8

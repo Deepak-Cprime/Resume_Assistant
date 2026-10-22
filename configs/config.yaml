@@ -6,9 +6,10 @@ ingestion:
   max_file_mb: 10
   max_pages: 10
 parser:
-  default: pymupdf4llm
-  fallback: docling
-  ocr: tesseract
+  default: pymupdf4llm      # digital PDFs, incl. two-column (column-aware, no ML)
+  docx: python_docx
+  fallback: null            # "docling" = heavy retry for unusable results (needs torch)
+  ocr: tesseract            # used only by the fallback parser
   vlm_fallback: {enabled: false, model: "qwen2.5vl:7b"}
   min_chars_per_page: 50
 llm:

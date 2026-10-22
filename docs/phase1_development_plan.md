@@ -74,12 +74,12 @@ app/
 src/
   config.py
   providers/  base.py, factory.py, parsers/, embedders/, llm/, vectorstores/, keyword/
-  ingestion/  intake.py, cleaning.py
+  ingestion/  intake.py, cleaning.py, validation.py
   structure/  sections.py, entries.py, dates.py
   metadata/   schema.py, regex_extract.py, llm_extract.py, skills.py, pii.py
   chunking/   chunker.py, budgets.py, enrich.py
   stores/     db.py, files.py
-  pipeline/   run.py, delete.py, manifest.py
+  pipeline/   run.py, delete.py, manifest.py, parse_stage.py (one module per stage)
 configs/      config.yaml, sections_resume.yaml, skills_aliases.yaml
 data/         raw/, markdown/, profiles/, chunks/, indexes/, app.db      (gitignored)
 tests/        unit/, integration/, ui/, fixtures/, conftest.py
@@ -113,7 +113,7 @@ Build in order. Each milestone ends with its tests written and passing (section 
 |---|---|---|---|
 | M0 | Scaffolding | Layout, `requirements.txt`, `requirements-dev.txt`, `config.yaml`, `config.py`, Protocols + factory, logging, `pytest` + `ruff` config, fixture generator script | `import src` works; config loads; `pytest` runs (empty) |
 | M1 | Storage + intake | SQLite schema + repository functions; validate (magic bytes, size, pages, encryption); sha256; raw file store; status table | Re-uploading a file creates nothing new |
-| M2 | Parsing | pymupdf4llm and Docling parsers; router (chars/page, column detection, DOCX, scanned); validation; cleaning; Markdown saved | Fixture resumes parse in correct reading order |
+| M2 | Parsing | pymupdf4llm parser (column-aware for sidebar pages, PyMuPDF only), python-docx parser, optional Docling parser (off by default); router (chars/page, column detection, DOCX, scanned); validation; cleaning; Markdown saved | Fixture resumes parse in correct reading order |
 | M3 | Structure | Section detection (synonyms + heuristics + fuzzy), entry splitting, date normalisation | ≥ 90% of tokens in known sections on fixtures |
 | M4 | Metadata | Regex contact fields; YOE as interval union; gaps; skill aliases (claimed vs used); Ollama JSON-schema extraction per entry with grounding check; PII masking | Field accuracy ≥ 90% on labelled fixtures |
 | M5 | Chunking | Section + entry chunker; adaptive per-section budgets stored on the role; structural prefix; profile chunk; parent links; deterministic chunk ids | 0 chunks over model limit; every experience chunk has company + dates |
@@ -137,8 +137,9 @@ ingestion:
   max_file_mb: 10
   max_pages: 10
 parser:
-  default: pymupdf4llm
-  fallback: docling
+  default: pymupdf4llm      # digital PDFs, incl. two-column (column-aware, no ML)
+  docx: python_docx
+  fallback: null            # "docling" = heavy retry for unusable results (needs torch)
   ocr: tesseract
   vlm_fallback: {enabled: false, model: qwen2.5vl:7b}
   min_chars_per_page: 50
@@ -284,7 +285,8 @@ Phase 1 is closed when all of these hold:
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| Docling slow or heavy on CPU | Long indexing | Use only via router; mark tests `slow`; cache Markdown on disk |
+| Docling slow or heavy on CPU | Laptop struggles, long indexing | Off by default (`parser.fallback: null`); default path is PyMuPDF only; enable Docling only for scanned PDFs; tests marked `slow` |
+| Scanned resumes need OCR | Wrong dates/numbers, no heading structure | pymupdf4llm OCRs pages with no text layer using a small built-in model (RapidOCR, no torch); validation still flags garbage; Docling stays optional |
 | Ollama extraction inconsistent | Wrong metadata | JSON schema, temperature 0, per-entry calls, grounding check, accuracy tests |
 | Two-column templates still mis-parsed | Mixed sections | Router + validation + `needs_review`; snapshot tests on two-column fixtures |
 | Streamlit reruns reload models | Slow UI | `st.cache_resource`; tested in M9 |

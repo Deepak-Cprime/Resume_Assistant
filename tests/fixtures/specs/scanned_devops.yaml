@@ -1,0 +1,33 @@
+id: scanned_devops
+layout: scanned
+name: Rahul Verma
+email: rahul.verma@example.com
+phone: "+1 555 0108"
+location: Atlanta, GA
+summary: DevOps engineer automating cloud infrastructure and delivery pipelines for fintech teams.
+date_format: "%b %Y"
+experience:
+  - title: DevOps Engineer
+    company: Peachtree Fintech
+    location: Atlanta, GA
+    start: "2019-07"
+    end: "2022-09"
+    bullets:
+      - Automated AWS infrastructure with Terraform across 15 accounts.
+      - Built Jenkins pipelines that shortened releases from weekly to daily.
+  - title: Senior DevOps Engineer
+    company: Southern Ledger
+    location: Atlanta, GA
+    start: "2022-10"
+    end: "2025-03"
+    bullets:
+      - Moved monolith deployments to Docker and Kubernetes.
+      - Added security scanning with Trivy to every pipeline.
+education:
+  - {degree: B.E. in Information Technology, school: Georgia Valley College, year: 2019}
+skills: [AWS, Terraform, Docker, Kubernetes, Jenkins]
+certifications: [HashiCorp Certified Terraform Associate]
+expected:
+  as_of: "2025-06-01"
+  total_yoe: 5.6
+  sections: [summary, experience, education, skills, certifications]

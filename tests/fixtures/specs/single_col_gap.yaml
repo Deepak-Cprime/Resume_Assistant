@@ -1,0 +1,35 @@
+id: single_col_gap
+layout: single_column
+name: Elena Petrova
+email: elena.petrova@example.com
+phone: "+1 555 0103"
+location: Chicago, IL
+summary: Data analyst returning to work after a career break, experienced in SQL reporting and forecasting.
+date_format: "%b %Y"
+headings: {experience: Professional Experience, skills: Core Competencies, education: "Education & Training"}
+experience:
+  - title: Data Analyst
+    company: Lakeside Retail Group
+    location: Chicago, IL
+    start: "2015-02"
+    end: "2018-03"
+    bullets:
+      - Automated weekly sales reporting in SQL and Tableau for 60 stores.
+      - Built a demand forecast that reduced stock-outs by 12 percent.
+  - title: Senior Data Analyst
+    company: Meridian Health Partners
+    location: Chicago, IL
+    start: "2019-09"
+    end: "2023-05"
+    bullets:
+      - Modelled patient no-show rates with Python and scikit-learn.
+      - Presented findings to clinic directors each quarter.
+education:
+  - {degree: M.S. in Statistics, school: Great Lakes University, year: 2014}
+skills: [SQL, Python, Tableau, scikit-learn, Excel]
+certifications: [Tableau Desktop Specialist]
+expected:
+  as_of: "2025-06-01"
+  total_yoe: 6.75
+  gaps: [{start: "2018-03", end: "2019-09", months: 18}]
+  sections: [summary, experience, education, skills, certifications]

@@ -1,0 +1,33 @@
+id: single_col_overlap
+layout: single_column
+name: Marcus Oyelaran
+email: marcus.oyelaran@example.com
+phone: "+1 555 0102"
+location: Denver, CO
+summary: Full-stack developer who consulted on the side while employed full time.
+date_format: "%m/%Y"
+headings: {experience: Work History, skills: Technical Skills}
+experience:
+  - title: Full-Stack Developer
+    company: Harbor Analytics
+    location: Denver, CO
+    start: "2019-01"
+    end: "2022-06"
+    bullets:
+      - Built a React and Node.js dashboard used by 1,200 analysts.
+      - Reduced API latency by 35 percent with Redis caching.
+  - title: Freelance Consultant
+    company: Self-employed
+    location: Remote
+    start: "2020-06"
+    end: "2021-12"
+    bullets:
+      - Delivered three e-commerce storefronts on Shopify and Next.js.
+education:
+  - {degree: B.S. in Information Systems, school: Rocky Mountain State University, year: 2018}
+skills: [JavaScript, TypeScript, React, Node.js, Redis]
+certifications: [Meta Front-End Developer Certificate]
+expected:
+  as_of: "2025-06-01"
+  total_yoe: 3.5 # union of overlapping jobs, not the 5.0 sum
+  sections: [summary, experience, education, skills, certifications]

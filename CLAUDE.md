@@ -83,17 +83,19 @@ src/
   config.py             load configs/config.yaml + env vars into typed settings
   providers/            Protocol interfaces + factory
     base.py             DocumentParser, EmbeddingProvider, LLMProvider, VectorStore, KeywordIndex
-    parsers/            pymupdf4llm_parser.py, docling_parser.py, router.py
+    parsers/            pymupdf4llm_parser.py (+ layout.py column-aware), docx_parser.py,
+                        docling_parser.py (optional, heavy), router.py
     embedders/          st_embedder.py (sentence-transformers), ollama_embedder.py
     llm/                ollama_llm.py
     vectorstores/       faiss_store.py
     keyword/            bm25_index.py, tokenizer.py (tech-aware)
-  ingestion/            intake.py (validate, hash, dedupe), cleaning.py
+  ingestion/            intake.py (validate, hash, dedupe), cleaning.py, validation.py (parse quality)
   structure/            sections.py (synonyms + heuristics), entries.py, dates.py
   metadata/             schema.py (Pydantic), regex_extract.py, llm_extract.py, skills.py, pii.py
   chunking/             chunker.py (section + entry), budgets.py (adaptive), enrich.py
   stores/               db.py (SQLite schema + repo functions), files.py (raw/markdown paths)
-  pipeline/             run.py (orchestrates stages, statuses, idempotency), delete.py, manifest.py
+  pipeline/             run.py (orchestrates stages, statuses, idempotency), delete.py, manifest.py,
+                        parse_stage.py (one stage per module; run.py calls them in order)
 configs/
   config.yaml           providers, models, budgets, paths
   sections_resume.yaml  canonical section synonyms
@@ -109,7 +111,7 @@ eval/                   golden_questions.yaml (drafted during Phase 1, used in P
 |---|-----------|--------------|-----------|
 | M0 | Scaffolding | layout above, `requirements.txt`, `config.yaml`, `config.py`, provider Protocols + factory, logging | `import src` works; config loads |
 | M1 | Storage + intake | SQLite schema (roles, candidates, documents, experiences, skills, certifications, chunks, index_manifest); validate/hash/store raw files; status table | re-uploading a file creates nothing new |
-| M2 | Parsing | pymupdf4llm + Docling parsers, router (chars/page, column detection), validation, cleaning; Markdown saved | 10 sample resumes parse with correct reading order |
+| M2 | Parsing | pymupdf4llm (column-aware for sidebars) + python-docx parsers, optional Docling, router (chars/page, column detection), validation, cleaning; Markdown saved | 10 sample resumes parse with correct reading order |
 | M3 | Structure | section detection (synonyms + heuristics), entry splitting, date normalisation | ≥ 90% tokens in known sections on samples |
 | M4 | Metadata | regex contact fields, YOE as interval union, gaps, skill aliases (claimed vs used), Ollama JSON-schema extraction per entry with grounding check, PII masking | field accuracy ≥ 90% on hand-labelled samples |
 | M5 | Chunking | section + entry chunker, adaptive per-section budgets stored on the role, structural prefix, profile chunk, parent links, deterministic chunk ids | 0 chunks over model limit; every experience chunk has company + dates |
@@ -129,7 +131,8 @@ eval/                   golden_questions.yaml (drafted during Phase 1, used in P
 
 ### Defaults
 
-- Python 3.11, `sentence-transformers`, `pymupdf4llm`, `docling`, `faiss-cpu`, `bm25s`,
+- Python 3.11, `sentence-transformers`, `pymupdf4llm`, `python-docx`, `faiss-cpu`, `bm25s`,
+  (`docling` is optional: `requirements-docling.txt`, off by default because it needs torch),
   `pydantic`, `pyyaml`, `ollama`, `streamlit`, `pytest`.
 - Ollama: `qwen2.5:7b` (or `llama3.1:8b`) for extraction at temperature 0; `nomic-embed-text`.
 - Embedding baseline `BAAI/bge-small-en-v1.5`, challenger `BAAI/bge-m3`.

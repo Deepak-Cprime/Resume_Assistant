@@ -17,7 +17,8 @@ from src.config import Settings
 _REGISTRY: dict[str, dict[str, str | Callable[..., Any]]] = {
     "parser": {
         "pymupdf4llm": "src.providers.parsers.pymupdf4llm_parser:PyMuPDF4LLMParser",
-        "docling": "src.providers.parsers.docling_parser:DoclingParser",
+        "python_docx": "src.providers.parsers.docx_parser:PythonDocxParser",
+        "docling": "src.providers.parsers.docling_parser:DoclingParser",  # optional, heavy
     },
     "embedder": {
         "sentence_transformers": "src.providers.embedders.st_embedder:SentenceTransformerEmbedder",

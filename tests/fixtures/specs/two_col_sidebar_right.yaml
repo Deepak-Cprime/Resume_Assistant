@@ -1,0 +1,35 @@
+id: two_col_sidebar_right
+layout: two_column
+sidebar: right
+sidebar_width: 160
+name: Kenji Watanabe
+email: kenji.watanabe@example.com
+phone: "+1 555 0107"
+location: San Jose, CA
+summary: Site reliability engineer focused on observability, incident response and Kubernetes platforms.
+date_format: "%b %Y"
+experience:
+  - title: Site Reliability Engineer
+    company: Silverline Cloud
+    location: San Jose, CA
+    start: "2016-09"
+    end: "2020-02"
+    bullets:
+      - Built Prometheus and Grafana monitoring covering 400 hosts.
+      - Wrote runbooks that cut mean time to recovery from 50 to 20 minutes.
+  - title: Staff SRE
+    company: Orchard Streaming
+    location: San Jose, CA
+    start: "2020-03"
+    end: "2024-08"
+    bullets:
+      - Ran a 12-cluster Kubernetes fleet with Terraform and Ansible.
+      - Led the on-call programme and reduced pages by 40 percent.
+education:
+  - {degree: B.S. in Electrical Engineering, school: Bayview Institute, year: 2016}
+skills: [Linux, Prometheus, Grafana, Kubernetes, Terraform, Ansible]
+certifications: [Certified Kubernetes Administrator]
+expected:
+  as_of: "2025-06-01"
+  total_yoe: 7.8
+  sections: [contact, summary, experience, education, skills, certifications]

@@ -1,0 +1,33 @@
+id: docx_frontend
+layout: docx
+name: Sofia Marino
+email: sofia.marino@example.com
+phone: "+1 555 0109"
+location: Portland, OR
+summary: Front-end engineer specialising in accessible design systems and React performance.
+date_format: "%B %Y"
+experience:
+  - title: Front-End Engineer
+    company: Willamette Software
+    location: Portland, OR
+    start: "2018-09"
+    end: "2021-06"
+    bullets:
+      - Created a React component library adopted by eight product teams.
+      - Improved Lighthouse accessibility scores from 72 to 98.
+  - title: Senior Front-End Engineer
+    company: Rose City Commerce
+    location: Portland, OR
+    start: "2021-07"
+    end: "2025-02"
+    bullets:
+      - Cut bundle size by 45 percent with code splitting and Vite.
+      - Led the migration from JavaScript to TypeScript.
+education:
+  - {degree: B.A. in Interaction Design, school: Cascadia Arts University, year: 2018}
+skills: [React, TypeScript, CSS, Vite, Storybook]
+certifications: [IAAP Web Accessibility Specialist]
+expected:
+  as_of: "2025-06-01"
+  total_yoe: 6.3
+  sections: [summary, experience, education, skills, certifications]

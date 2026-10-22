@@ -39,9 +39,13 @@ class VlmFallbackConfig(_Section):
 
 
 class ParserConfig(_Section):
-    default: str = "pymupdf4llm"
-    fallback: str = "docling"
-    ocr: str = "tesseract"
+    default: str = "pymupdf4llm"  # digital PDFs, including two-column (column-aware)
+    docx: str = "python_docx"
+    # Optional heavier parser (e.g. "docling"), tried only when the default result is
+    # unusable. None keeps everything light: the default parser already OCRs scanned pages
+    # with a small built-in model, so no torch model is ever loaded.
+    fallback: str | None = None
+    ocr: str = "tesseract"  # used only by the fallback parser
     vlm_fallback: VlmFallbackConfig = VlmFallbackConfig()
     min_chars_per_page: int = Field(50, ge=0)
 

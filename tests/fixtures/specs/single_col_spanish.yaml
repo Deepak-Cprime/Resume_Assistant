@@ -1,0 +1,39 @@
+id: single_col_spanish
+layout: single_column
+name: Lucía Fernández
+email: lucia.fernandez@example.com
+phone: "+34 555 0105"
+location: Valencia, España
+summary: Ingeniera de datos con seis años de experiencia en canalizaciones de datos y análisis.
+date_format: "%m/%Y"
+present_label: Actualidad
+headings:
+  summary: Resumen
+  experience: Experiencia
+  education: Educación
+  skills: Habilidades
+  certifications: Certificaciones
+experience:
+  - title: Ingeniera de Datos Sénior
+    company: Mediterráneo Energía
+    location: Valencia, España
+    start: "2022-09"
+    end: present
+    bullets:
+      - Diseñó canalizaciones de datos en Spark y Airflow para 30 millones de registros diarios.
+      - Redujo el coste de la nube un 22 por ciento.
+  - title: Analista de Datos
+    company: Costa Seguros
+    location: Valencia, España
+    start: "2019-04"
+    end: "2022-08"
+    bullets:
+      - Creó paneles de control en Power BI para el equipo directivo.
+education:
+  - {degree: Grado en Matemáticas, school: Universidad del Levante, year: 2018}
+skills: [Spark, Airflow, SQL, Python, Power BI]
+certifications: [Microsoft Certified Azure Data Engineer]
+expected:
+  as_of: "2025-06-01"
+  total_yoe: 6.1
+  sections: [summary, experience, education, skills, certifications]

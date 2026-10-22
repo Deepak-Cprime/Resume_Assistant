@@ -1,0 +1,33 @@
+id: single_col_backend
+layout: single_column
+name: Priya Raman
+email: priya.raman@example.com
+phone: "+1 555 0101"
+location: Austin, TX
+summary: Backend engineer with six years of experience building payment and logistics services in Go and Python.
+date_format: "%b %Y"
+experience:
+  - title: Senior Backend Engineer
+    company: Northwind Payments
+    location: Austin, TX
+    start: "2021-03"
+    end: "2024-12"
+    bullets:
+      - Led migration of 40 services to Kubernetes on EKS, cutting deploy time from 45 to 8 minutes.
+      - Designed an idempotent payment API in Go handling 3,000 requests per second.
+  - title: Software Engineer
+    company: Brightline Logistics
+    location: Dallas, TX
+    start: "2018-06"
+    end: "2021-02"
+    bullets:
+      - Built a route optimisation service in Python and PostgreSQL used by 200 drivers.
+      - Introduced CI pipelines with GitHub Actions and Terraform.
+education:
+  - {degree: B.Tech in Computer Science, school: Anand Institute of Technology, year: 2018}
+skills: [Go, Python, Kubernetes, PostgreSQL, Terraform, AWS]
+certifications: [AWS Certified Solutions Architect]
+expected:
+  as_of: "2025-06-01"
+  total_yoe: 6.4
+  sections: [summary, experience, education, skills, certifications]

@@ -1,0 +1,2 @@
+# Optional: heavy layout + OCR parser (pulls in torch). Enable with parser.fallback: docling
+docling>=2.0

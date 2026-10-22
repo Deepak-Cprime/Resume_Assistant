@@ -1,0 +1,34 @@
+id: single_col_no_headings
+layout: single_column
+no_headings: true
+name: Tomas Becker
+email: tomas.becker@example.com
+phone: "+1 555 0104"
+location: Seattle, WA
+summary: Mobile engineer shipping iOS and Android apps for consumer products.
+date_format: "%b %Y"
+experience:
+  - title: Mobile Engineer
+    company: Pinecone Apps
+    location: Seattle, WA
+    start: "2020-01"
+    end: "2022-12"
+    bullets:
+      - Rebuilt the onboarding flow in Swift, raising activation by 18 percent.
+      - Owned the release train for iOS and Android.
+  - title: Senior Mobile Engineer
+    company: Cascade Fitness
+    location: Seattle, WA
+    start: "2023-02"
+    end: "2025-04"
+    bullets:
+      - Introduced Kotlin Multiplatform for shared business logic.
+      - Mentored four junior engineers.
+education:
+  - {degree: B.S. in Computer Science, school: Puget Sound College, year: 2019}
+skills: [Swift, Kotlin, Objective-C, Firebase, Xcode]
+certifications: [Google Associate Android Developer]
+expected:
+  as_of: "2025-06-01"
+  total_yoe: 5.1
+  sections: [] # no heading lines; sections must be inferred

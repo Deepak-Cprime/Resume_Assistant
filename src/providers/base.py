@@ -16,8 +16,10 @@ class ParsedDocument:
     parser: str
     parser_version: str = ""
     warnings: list[str] = field(default_factory=list)
-    # Per-page character counts, used by the router and validation.
+    # Per-page character counts of the PDF text layer, used by the router and validation.
     chars_per_page: list[int] = field(default_factory=list)
+    # Markdown per page when the parser can split it (lets cleaning drop repeated footers).
+    pages: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
