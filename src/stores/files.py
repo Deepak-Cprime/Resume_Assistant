@@ -27,6 +27,12 @@ def index_dir(settings: Settings, model_name: str) -> Path:
     return settings.indexes_dir / model_slug(model_name)
 
 
+def keyword_dir(settings: Settings) -> Path:
+    """The BM25 index; independent of any embedding model. The leading underscore keeps it
+    from ever colliding with a model folder (model_slug never starts with one)."""
+    return settings.indexes_dir / "_bm25"
+
+
 def sections_path(settings: Settings, doc_id: str) -> Path:
     return settings.profiles_dir / f"{doc_id}.sections.json"
 

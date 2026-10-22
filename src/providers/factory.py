@@ -87,4 +87,6 @@ def create_vector_store(dim: int, settings: Settings, provider: str | None = Non
 
 
 def create_keyword_index(settings: Settings) -> Any:
-    return _resolve("keyword", settings.keyword.provider)(tokenizer=settings.keyword.tokenizer)
+    return _resolve("keyword", settings.keyword.provider)(
+        tokenizer=settings.keyword.tokenizer, k1=settings.keyword.k1, b=settings.keyword.b
+    )

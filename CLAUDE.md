@@ -98,7 +98,8 @@ src/
   stores/               db.py (SQLite schema + repo functions), files.py (raw/markdown paths)
   pipeline/             run.py (orchestrates stages, statuses, idempotency), delete.py, manifest.py,
                         parse_stage.py, structure_stage.py, extract_stage.py, chunk_stage.py,
-                        index_stage.py (one per stage; run.py calls them in order)
+                        index_stage.py (vectors), keyword_stage.py (BM25); one per stage,
+                        run.py calls them in order
 configs/
   config.yaml           providers, models, budgets, paths
   sections_resume.yaml  canonical section synonyms

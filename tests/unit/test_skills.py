@@ -75,3 +75,16 @@ def test_skill_list_detection():
     assert not V.looks_like_skill_list("Austin, TX, USA")
     assert not V.looks_like_skill_list("Python, Go, SQL")  # too few items
     assert not V.looks_like_skill_list("Mobile engineer, Pinecone Apps, Seattle, WA, USA, remote")
+
+
+def test_find_spans_gives_positions_and_resolves_overlaps():
+    text = "Built in Go and golang with Apache Airflow"
+    spans = V.find_spans(text)
+    assert [(text[s:e], canon) for s, e, canon in spans] == [
+        ("Go", "Go"), ("golang", "Go"), ("Apache Airflow", "Airflow")]  # not also bare "Airflow"
+    assert all(a[1] <= b[0] for a, b in zip(spans, spans[1:], strict=False))
+
+
+def test_find_spans_can_ignore_case_for_queries():
+    assert V.find_spans("go developer") == []
+    assert V.find_spans("go developer", ignore_case=True) == [(0, 2, "Go")]

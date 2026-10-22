@@ -116,7 +116,9 @@ class VectorStoreConfig(_Section):
 
 class KeywordConfig(_Section):
     provider: str = "bm25s"
-    tokenizer: str = "tech_aware"
+    tokenizer: str = "tech_aware"  # "simple" = plain word split, the comparison baseline
+    k1: float = Field(1.5, gt=0)  # term-frequency saturation
+    b: float = Field(0.75, ge=0, le=1)  # length normalisation
 
 
 class MetadataConfig(_Section):

@@ -33,6 +33,7 @@ class SkillVocabulary:
     exact_case: dict[str, str]  # lowercase term -> the one spelling that counts ("go" -> "Go")
     _exact_re: re.Pattern[str] | None
     _loose_re: re.Pattern[str] | None
+    _any_re: re.Pattern[str] | None  # every term, any case (for queries typed in lowercase)
 
     def normalize(self, token: str) -> str | None:
         """Canonical name for one token ('k8s' -> 'Kubernetes'), or None if unknown."""
@@ -51,6 +52,26 @@ class SkillVocabulary:
             if rx is not None:
                 hits += [(m.start(), self.by_term[m.group(0).lower()]) for m in rx.finditer(text)]
         return list(dict.fromkeys(canon for _, canon in sorted(hits)))
+
+    def find_spans(self, text: str, *, ignore_case: bool = False) -> list[tuple[int, int, str]]:
+        """(start, end, canonical) of every skill mention, left to right, never overlapping
+        (the longer mention wins: 'Apache Airflow' beats 'Airflow').
+
+        `ignore_case` also accepts 'go' or 'swift' typed in lowercase, which a search query
+        needs even though a resume sentence saying 'go' is not the language."""
+        patterns = [self._any_re] if ignore_case else [self._exact_re, self._loose_re]
+        spans = [
+            (m.start(), m.end(), self.by_term[m.group(0).lower()])
+            for rx in patterns
+            if rx is not None
+            for m in rx.finditer(text)
+        ]
+        spans.sort(key=lambda s: (s[0], s[0] - s[1]))
+        out: list[tuple[int, int, str]] = []
+        for span in spans:
+            if not out or span[0] >= out[-1][1]:
+                out.append(span)
+        return out
 
     def split_list(self, text: str) -> list[str]:
         """Items of a skills section ('Languages: Python, Go' -> ['Python', 'Go']).
@@ -95,6 +116,7 @@ def load_vocabulary(path: Path | str | None = None) -> SkillVocabulary:
         exact_case=exact_case,
         _exact_re=_compile(set(exact_case.values()), 0),
         _loose_re=_compile({t for t in by_term if t not in exact_case}, re.IGNORECASE),
+        _any_re=_compile(set(by_term), re.IGNORECASE),
     )
 
 
