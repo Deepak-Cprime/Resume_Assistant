@@ -46,6 +46,7 @@ def configure(settings: Settings, *models: str) -> None:
     embedding models (the first is the default)."""
     settings.metadata.as_of = date(2025, 6, 1)
     settings.vector_store.provider = "numpy"
+    settings.embedding.models.clear()  # drop the real model from configs/config.yaml
     for name in models or ("fake-embed",):
         settings.embedding.models.append(
             EmbeddingModelConfig(provider="sentence_transformers", name=name)

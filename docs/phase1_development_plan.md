@@ -80,7 +80,8 @@ src/
   chunking/   chunker.py, budgets.py, enrich.py, tokens.py
   stores/     db.py, files.py
   pipeline/   run.py, delete.py, manifest.py, parse_stage.py, structure_stage.py,
-              extract_stage.py, chunk_stage.py, index_stage.py, keyword_stage.py (one per stage)
+              extract_stage.py, chunk_stage.py, index_stage.py, keyword_stage.py (one per stage),
+              overview.py (read-only views for the UI), uploads.py (batch intake)
 configs/      config.yaml, sections_resume.yaml, skills_aliases.yaml
 data/         raw/, markdown/, profiles/, chunks/, indexes/, app.db      (gitignored)
 tests/        unit/, integration/, ui/, fixtures/, conftest.py

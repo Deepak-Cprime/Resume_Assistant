@@ -214,9 +214,9 @@ def get_document(conn: sqlite3.Connection, doc_id: str) -> sqlite3.Row | None:
 
 def list_documents(conn: sqlite3.Connection, status: str | None = None) -> list[sqlite3.Row]:
     if status is None:
-        return conn.execute("SELECT * FROM documents ORDER BY created_at, doc_id").fetchall()
+        return conn.execute("SELECT * FROM documents ORDER BY created_at, rowid").fetchall()
     return conn.execute(
-        "SELECT * FROM documents WHERE status = ? ORDER BY created_at, doc_id", (status,)
+        "SELECT * FROM documents WHERE status = ? ORDER BY created_at, rowid", (status,)
     ).fetchall()
 
 
@@ -408,7 +408,7 @@ PENDING_STATUSES = ("uploaded", "parsed", "structured", "extracted")  # work lef
 def list_pending_documents(conn: sqlite3.Connection) -> list[sqlite3.Row]:
     marks = ", ".join("?" for _ in PENDING_STATUSES)
     return conn.execute(
-        f"SELECT * FROM documents WHERE status IN ({marks}) ORDER BY created_at, doc_id",
+        f"SELECT * FROM documents WHERE status IN ({marks}) ORDER BY created_at, rowid",
         PENDING_STATUSES,
     ).fetchall()
 
@@ -418,13 +418,13 @@ def chunk_owner_documents(conn: sqlite3.Connection) -> list[sqlite3.Row]:
     replaced and owns none)."""
     return conn.execute(
         "SELECT * FROM documents WHERE doc_id IN (SELECT DISTINCT doc_id FROM chunks) "
-        "ORDER BY created_at, doc_id"
+        "ORDER BY created_at, rowid"
     ).fetchall()
 
 
 def documents_of_candidate(conn: sqlite3.Connection, candidate_id: int) -> list[sqlite3.Row]:
     return conn.execute(
-        "SELECT * FROM documents WHERE candidate_id = ? ORDER BY created_at, doc_id",
+        "SELECT * FROM documents WHERE candidate_id = ? ORDER BY created_at, rowid",
         (candidate_id,),
     ).fetchall()
 
@@ -446,3 +446,40 @@ def delete_candidate_rows(conn: sqlite3.Connection, candidate_id: int) -> None:
 def delete_document_row(conn: sqlite3.Connection, doc_id: str) -> None:
     with transaction(conn):
         conn.execute("DELETE FROM documents WHERE doc_id = ?", (doc_id,))
+
+
+# --- read models for the UI ------------------------------------------------------------
+
+
+def list_document_rows(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    """Every upload, newest first, with the candidate's name when known."""
+    return conn.execute(
+        "SELECT d.doc_id, d.filename, d.doc_type, d.status, d.parser, d.error, d.created_at, "
+        "d.candidate_id, c.display_name FROM documents d "
+        "LEFT JOIN candidates c ON c.candidate_id = d.candidate_id "
+        "ORDER BY d.created_at DESC, d.rowid DESC"
+    ).fetchall()
+
+
+def list_candidate_rows(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    return conn.execute(
+        "SELECT c.candidate_id, c.display_name, c.headline, c.total_yoe, c.seniority, "
+        "(SELECT COUNT(*) FROM chunks k WHERE k.candidate_id = c.candidate_id) AS n_chunks, "
+        "(SELECT COUNT(*) FROM documents d WHERE d.candidate_id = c.candidate_id) AS n_documents "
+        "FROM candidates c ORDER BY c.display_name, c.candidate_id"
+    ).fetchall()
+
+
+def list_chunks_for_document(conn: sqlite3.Connection, doc_id: str) -> list[sqlite3.Row]:
+    return conn.execute(
+        "SELECT * FROM chunks WHERE doc_id = ? ORDER BY level, chunk_key", (doc_id,)
+    ).fetchall()
+
+
+def embedded_chunk_sizes(conn: sqlite3.Connection) -> list[int]:
+    rows = conn.execute("SELECT n_tokens FROM chunks WHERE embed = 1").fetchall()
+    return [int(r["n_tokens"] or 0) for r in rows]
+
+
+def count_candidates(conn: sqlite3.Connection) -> int:
+    return int(conn.execute("SELECT COUNT(*) FROM candidates").fetchone()[0])

@@ -253,16 +253,21 @@ def verify_index(
     conn: sqlite3.Connection, settings: Settings, embedder: EmbeddingProvider
 ) -> IndexReport:
     """Compare the saved index with the database without changing either."""
+    return verify_model_index(conn, settings, embedder.name)
+
+
+def verify_model_index(conn: sqlite3.Connection, settings: Settings, model: str) -> IndexReport:
+    """Same check by model name, so the UI can show index health without loading the model."""
     wanted = {r["chunk_id"]: r["content_hash"] for r in db.list_chunks(conn, embedded_only=True)}
-    manifest = mf.read_manifest(settings, embedder.name)
+    manifest = mf.read_manifest(settings, model)
     if manifest is None:
-        return IndexReport(embedder.name, len(wanted), 0, missing=sorted(wanted))
+        return IndexReport(model, len(wanted), 0, missing=sorted(wanted))
     store = factory.create_vector_store(manifest.dim, settings, provider=manifest.vector_store)
-    store.load(mf.vectors_path(settings, embedder.name, store))
+    store.load(mf.vectors_path(settings, model, store))
     in_index = set(store.ids())
-    hashes = mf.read_hashes(settings, embedder.name)
+    hashes = mf.read_hashes(settings, model)
     return IndexReport(
-        model=embedder.name,
+        model=model,
         n_db=len(wanted),
         n_index=store.count(),
         missing=sorted(set(wanted) - in_index),

@@ -99,7 +99,8 @@ src/
   pipeline/             run.py (orchestrates stages, statuses, idempotency), delete.py, manifest.py,
                         parse_stage.py, structure_stage.py, extract_stage.py, chunk_stage.py,
                         index_stage.py (vectors), keyword_stage.py (BM25); one per stage,
-                        run.py calls them in order
+                        run.py calls them in order.
+                        overview.py (read-only views for the UI), uploads.py (batch intake)
 configs/
   config.yaml           providers, models, budgets, paths
   sections_resume.yaml  canonical section synonyms

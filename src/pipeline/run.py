@@ -149,6 +149,7 @@ def _build_indexes(
     embedders: list[EmbeddingProvider],
     result: RunResult,
     progress: Progress | None,
+    rebuild: bool = False,
 ) -> None:
     for embedder in embedders:
         phase = f"embedding:{embedder.name}"
@@ -159,13 +160,13 @@ def _build_indexes(
 
         try:
             result.vectors[embedder.name] = index_stage.build_index(
-                conn, settings, embedder, progress=report
+                conn, settings, embedder, rebuild=rebuild, progress=report
             )
         except Exception as e:  # noqa: BLE001 - e.g. a chunk over the model limit, Ollama down
             log.exception("vector index for %s failed", embedder.name)
             result.errors.append(f"{embedder.name}: {e}")
     try:
-        result.keyword = keyword_stage.build_keyword_index(conn, settings)
+        result.keyword = keyword_stage.build_keyword_index(conn, settings, rebuild=rebuild)
         if progress:
             progress("keyword", result.keyword.n_docs, result.keyword.n_docs)
     except Exception as e:  # noqa: BLE001
@@ -180,6 +181,7 @@ def run_pipeline(
     embedders: list[EmbeddingProvider] | None = None,
     doc_ids: set[str] | None = None,
     build_indexes: bool = True,
+    rebuild_indexes: bool = False,
     parser_factory: ParserFactory = factory.create_parser,
     llm: LLMProvider | None = None,
     progress: Progress | None = None,
@@ -188,7 +190,8 @@ def run_pipeline(
 
     `embedders` defaults to the configured default model only; pass more to build several
     indexes side by side. `doc_ids` limits which pending resumes are processed (the indexes
-    are always synced with the whole database). A resume becomes `indexed` only when the
+    are always synced with the whole database; `rebuild_indexes` re-embeds everything). A
+    resume becomes `indexed` only when the
     default model's vector index AND the keyword index were both built without error."""
     result = RunResult()
     pending = [r["doc_id"] for r in db.list_pending_documents(conn)
@@ -213,7 +216,7 @@ def run_pipeline(
     except Exception as e:  # noqa: BLE001 - model files missing, no network on first use ...
         result.errors.append(f"embedding model: {e}")
         models = []
-    _build_indexes(conn, settings, models, result, progress)
+    _build_indexes(conn, settings, models, result, progress, rebuild_indexes)
 
     default_built = settings.embedding.default in result.vectors
     if default_built and result.keyword is not None and not result.errors:
