@@ -1,0 +1,21 @@
+# Canonical resume sections and the headings that map to them.
+# Matching ignores case, accents and punctuation: "Education & Training" matches
+# "education and training"; "Educación" matches "educacion".
+sections:
+  summary: [summary, professional summary, executive summary, career summary, profile, professional profile, about me, about, objective, career objective, personal statement, resumen, resumen profesional, perfil, perfil profesional, objetivo]
+  experience: [experience, work experience, professional experience, work history, employment history, employment, career history, relevant experience, industry experience, experiencia, experiencia laboral, experiencia profesional, historial laboral]
+  education: [education, education and training, academic background, academic qualifications, qualifications, educational background, educacion, formacion, formacion academica, estudios]
+  skills: [skills, technical skills, core competencies, key skills, competencies, skills and tools, technologies, tech stack, technical proficiencies, areas of expertise, expertise, habilidades, competencias, habilidades tecnicas, conocimientos]
+  certifications: [certifications, certificates, licenses, licenses and certifications, certifications and licenses, professional certifications, courses and certifications, certificaciones, certificados]
+  projects: [projects, personal projects, selected projects, key projects, side projects, proyectos]
+  awards: [awards, honors, honors and awards, achievements, accomplishments, awards and achievements, premios, logros]
+  publications: [publications, papers, patents, publicaciones]
+  languages: [languages, language skills, idiomas]
+  interests: [interests, hobbies, hobbies and interests, intereses]
+  volunteering: [volunteering, volunteer experience, community involvement, voluntariado]
+  references: [references, referees, referencias]
+  contact: [contact, contact information, contact details, personal details, personal information, details, contacto, datos personales]
+
+# "Skills: Python, Go" on one line is accepted as a heading plus content for these labels only
+# ("Languages: Python, Go" inside a skills section must not start a spoken-languages section).
+inline_ok: [summary, skills, certifications]

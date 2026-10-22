@@ -27,7 +27,8 @@ _CHAR_MAP = str.maketrans(
 
 # lowercase fragment + hyphen + line break + lowercase continuation: "exper-\nience"
 _HYPHEN_BREAK = re.compile(r"(?<![\w-])([a-z]{2,})-\n([a-z]{2,})")
-_BULLET = re.compile(r"(?m)^([ \t]*)(?:[•▪◦●■□➢➤►▸‣⁃·–]|[-*])[ \t]+")
+# ':' and '.' are what OCR makes of a bullet glyph; a line never starts with them otherwise.
+_BULLET = re.compile(r"(?m)^([ \t]*)(?:[•▪◦●■□➢➤►▸‣⁃·–:.]|[-*])[ \t]+")
 _MAX_FOOTER_LEN = 80
 
 

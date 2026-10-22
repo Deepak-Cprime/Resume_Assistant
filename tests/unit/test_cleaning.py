@@ -8,7 +8,7 @@ def test_ligatures_and_invisible_characters():
     assert cleaning.clean_markdown(raw) == "finance and flow, office space"
 
 
-@pytest.mark.parametrize("marker", ["•", "▪", "◦", "●", "➢", "–", "*", "-"])
+@pytest.mark.parametrize("marker", ["•", "▪", "◦", "●", "➢", "–", "*", "-", ":", "."])
 def test_bullets_become_dash(marker):
     assert cleaning.clean_markdown(f"{marker} Built a service") == "- Built a service"
 
