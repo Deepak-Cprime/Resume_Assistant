@@ -1,0 +1,238 @@
+"""SQLite schema and repository functions. All SQL lives here."""
+
+from __future__ import annotations
+
+import json
+import sqlite3
+from collections.abc import Iterator
+from contextlib import contextmanager
+from datetime import UTC, datetime
+from pathlib import Path
+
+DEFAULT_ROLE_ID = 1
+
+# Pipeline order; a document moves forward one stage at a time.
+PIPELINE_STATUSES = ("uploaded", "parsed", "structured", "extracted", "chunked", "indexed")
+FLAG_STATUSES = ("failed", "needs_review")
+ALL_STATUSES = PIPELINE_STATUSES + FLAG_STATUSES
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS roles (
+    role_id       INTEGER PRIMARY KEY,
+    title         TEXT NOT NULL DEFAULT '',
+    jd_text       TEXT NOT NULL DEFAULT '',
+    chunk_budgets TEXT,
+    updated_at    TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS candidates (
+    candidate_id  INTEGER PRIMARY KEY AUTOINCREMENT,
+    display_name  TEXT,
+    email_hash    TEXT,
+    headline      TEXT,
+    total_yoe     REAL,
+    seniority     TEXT
+);
+CREATE TABLE IF NOT EXISTS documents (
+    doc_id          TEXT PRIMARY KEY,
+    candidate_id    INTEGER REFERENCES candidates(candidate_id) ON DELETE SET NULL,
+    filename        TEXT NOT NULL,
+    doc_type        TEXT,
+    raw_path        TEXT,
+    parser          TEXT,
+    parser_version  TEXT,
+    status          TEXT NOT NULL,
+    error           TEXT,
+    markdown_path   TEXT,
+    created_at      TEXT NOT NULL,
+    updated_at      TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS experiences (
+    exp_id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    candidate_id  INTEGER NOT NULL REFERENCES candidates(candidate_id) ON DELETE CASCADE,
+    title         TEXT,
+    company       TEXT,
+    start         TEXT,
+    end           TEXT,
+    chunk_id      INTEGER
+);
+CREATE TABLE IF NOT EXISTS skills (
+    candidate_id  INTEGER NOT NULL REFERENCES candidates(candidate_id) ON DELETE CASCADE,
+    skill         TEXT NOT NULL,
+    evidence      TEXT,
+    years         REAL,
+    chunk_ids     TEXT,
+    PRIMARY KEY (candidate_id, skill)
+);
+CREATE TABLE IF NOT EXISTS certifications (
+    candidate_id  INTEGER NOT NULL REFERENCES candidates(candidate_id) ON DELETE CASCADE,
+    name          TEXT NOT NULL,
+    year          INTEGER,
+    PRIMARY KEY (candidate_id, name)
+);
+CREATE TABLE IF NOT EXISTS chunks (
+    chunk_id      INTEGER PRIMARY KEY,
+    candidate_id  INTEGER NOT NULL REFERENCES candidates(candidate_id) ON DELETE CASCADE,
+    role_id       INTEGER NOT NULL REFERENCES roles(role_id),
+    doc_id        TEXT NOT NULL,
+    level         TEXT,
+    parent_id     INTEGER,
+    section       TEXT,
+    text          TEXT NOT NULL,
+    embed_text    TEXT NOT NULL,
+    n_tokens      INTEGER,
+    page          INTEGER,
+    content_hash  TEXT
+);
+CREATE TABLE IF NOT EXISTS index_manifest (
+    index_version INTEGER PRIMARY KEY AUTOINCREMENT,
+    emb_model     TEXT NOT NULL,
+    dim           INTEGER NOT NULL,
+    chunker_cfg   TEXT,
+    n_vectors     INTEGER NOT NULL,
+    created_at    TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_documents_status ON documents(status);
+CREATE INDEX IF NOT EXISTS idx_chunks_candidate ON chunks(candidate_id);
+CREATE INDEX IF NOT EXISTS idx_chunks_doc ON chunks(doc_id);
+"""
+
+
+class InvalidTransition(ValueError):
+    pass
+
+
+def _now() -> str:
+    return datetime.now(UTC).isoformat(timespec="seconds")
+
+
+def connect(path: Path | str) -> sqlite3.Connection:
+    """Open the database, creating the file, schema and the single role row if needed."""
+    if str(path) != ":memory:":
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(path), check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.executescript(SCHEMA)
+    conn.execute(
+        "INSERT OR IGNORE INTO roles (role_id, updated_at) VALUES (?, ?)",
+        (DEFAULT_ROLE_ID, _now()),
+    )
+    conn.commit()
+    return conn
+
+
+@contextmanager
+def transaction(conn: sqlite3.Connection) -> Iterator[sqlite3.Connection]:
+    try:
+        yield conn
+        conn.commit()
+    except BaseException:
+        conn.rollback()
+        raise
+
+
+# --- roles -----------------------------------------------------------------------------
+
+
+def get_role(conn: sqlite3.Connection, role_id: int = DEFAULT_ROLE_ID) -> sqlite3.Row:
+    return conn.execute("SELECT * FROM roles WHERE role_id = ?", (role_id,)).fetchone()
+
+
+def update_role(
+    conn: sqlite3.Connection, *, title: str, jd_text: str, role_id: int = DEFAULT_ROLE_ID
+) -> None:
+    """Editing the JD never touches documents, chunks or indexes."""
+    with transaction(conn):
+        conn.execute(
+            "UPDATE roles SET title = ?, jd_text = ?, updated_at = ? WHERE role_id = ?",
+            (title, jd_text, _now(), role_id),
+        )
+
+
+def set_chunk_budgets(
+    conn: sqlite3.Connection, budgets: dict, role_id: int = DEFAULT_ROLE_ID
+) -> None:
+    with transaction(conn):
+        conn.execute(
+            "UPDATE roles SET chunk_budgets = ?, updated_at = ? WHERE role_id = ?",
+            (json.dumps(budgets, sort_keys=True), _now(), role_id),
+        )
+
+
+# --- documents -------------------------------------------------------------------------
+
+
+def check_transition(old: str, new: str) -> None:
+    """Valid: any -> failed/needs_review; failed/needs_review -> uploaded (retry);
+    next pipeline stage; or back to an earlier stage (re-run after a config change)."""
+    if old not in ALL_STATUSES or new not in ALL_STATUSES:
+        raise InvalidTransition(f"unknown status in {old!r} -> {new!r}")
+    if new in FLAG_STATUSES:
+        return
+    if old in FLAG_STATUSES:
+        if new == "uploaded":
+            return
+        raise InvalidTransition(f"{old} -> {new}: retry must restart from 'uploaded'")
+    i, j = PIPELINE_STATUSES.index(old), PIPELINE_STATUSES.index(new)
+    if j == i + 1 or j < i:
+        return
+    raise InvalidTransition(f"{old} -> {new}: stages cannot be skipped")
+
+
+def insert_document(
+    conn: sqlite3.Connection,
+    *,
+    doc_id: str,
+    filename: str,
+    doc_type: str | None,
+    raw_path: str | None,
+    status: str = "uploaded",
+    error: str | None = None,
+) -> bool:
+    """Insert once per content hash. Returns False (and changes nothing) if it exists."""
+    now = _now()
+    with transaction(conn):
+        cur = conn.execute(
+            "INSERT OR IGNORE INTO documents "
+            "(doc_id, filename, doc_type, raw_path, status, error, created_at, updated_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (doc_id, filename, doc_type, raw_path, status, error, now, now),
+        )
+    return cur.rowcount == 1
+
+
+def get_document(conn: sqlite3.Connection, doc_id: str) -> sqlite3.Row | None:
+    return conn.execute("SELECT * FROM documents WHERE doc_id = ?", (doc_id,)).fetchone()
+
+
+def list_documents(conn: sqlite3.Connection, status: str | None = None) -> list[sqlite3.Row]:
+    if status is None:
+        return conn.execute("SELECT * FROM documents ORDER BY created_at, doc_id").fetchall()
+    return conn.execute(
+        "SELECT * FROM documents WHERE status = ? ORDER BY created_at, doc_id", (status,)
+    ).fetchall()
+
+
+def set_document_status(
+    conn: sqlite3.Connection, doc_id: str, status: str, error: str | None = None, **fields: str
+) -> None:
+    """Validate the transition and update the row. Extra `fields` may be parser,
+    parser_version, markdown_path or candidate_id."""
+    allowed = {"parser", "parser_version", "markdown_path", "candidate_id"}
+    if not set(fields) <= allowed:
+        raise ValueError(f"unexpected fields: {sorted(set(fields) - allowed)}")
+    row = get_document(conn, doc_id)
+    if row is None:
+        raise KeyError(doc_id)
+    check_transition(row["status"], status)
+    sets = ["status = ?", "error = ?", "updated_at = ?"] + [f"{k} = ?" for k in fields]
+    with transaction(conn):
+        conn.execute(
+            f"UPDATE documents SET {', '.join(sets)} WHERE doc_id = ?",
+            (status, error, _now(), *fields.values(), doc_id),
+        )
+
+
+def status_counts(conn: sqlite3.Connection) -> dict[str, int]:
+    rows = conn.execute("SELECT status, COUNT(*) AS n FROM documents GROUP BY status").fetchall()
+    return {r["status"]: r["n"] for r in rows}
