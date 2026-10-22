@@ -6,11 +6,11 @@ implementation the FAISS store is tested against. Fine up to roughly 100k chunks
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 import numpy as np
 
+from src import fsutil
 from src.providers.base import VectorHit
 from src.providers.vectorstores.common import check_batch, check_query
 
@@ -59,7 +59,7 @@ class NumpyStore:
         tmp = path.with_name(path.name + ".tmp")
         with tmp.open("wb") as f:
             np.savez(f, ids=self._ids, vectors=self._vectors)
-        os.replace(tmp, path)
+        fsutil.replace(tmp, path)
 
     def load(self, path: Path) -> None:
         with np.load(path) as data:

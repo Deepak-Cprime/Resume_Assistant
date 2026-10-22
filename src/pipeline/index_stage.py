@@ -14,7 +14,7 @@ import json
 import sqlite3
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 
 from src.chunking.budgets import Budgets
@@ -180,6 +180,13 @@ def _save(
         directory / mf.HASHES_FILE, json.dumps({str(k): v for k, v in sorted(hashes.items())})
     )
     files.write_text_atomic(directory / mf.MANIFEST_FILE, manifest.to_json())
+    _log_manifest(conn, settings, manifest)
+    return manifest
+
+
+def _log_manifest(
+    conn: sqlite3.Connection, settings: Settings, manifest: mf.IndexManifest
+) -> None:
     db.add_index_manifest(
         conn,
         emb_model=manifest.emb_model,
@@ -188,13 +195,58 @@ def _save(
         chunker_cfg={
             "strategy": settings.chunking.strategy,
             "model_limit": settings.chunking.model_limit,
-            "budgets_fingerprint": budgets_fp,
+            "budgets_fingerprint": manifest.budgets_fingerprint,
             "index_version": manifest.index_version,
-            "doc_prefix": doc_prefix,
-            "query_prefix": query_prefix,
+            "doc_prefix": manifest.doc_prefix,
+            "query_prefix": manifest.query_prefix,
         },
     )
-    return manifest
+
+
+def remove_from_indexes(
+    conn: sqlite3.Connection, settings: Settings, chunk_ids: list[int]
+) -> dict[str, int]:
+    """Drop these chunks from every saved vector index; returns {model: vectors removed}.
+
+    Works from the files alone (no embedding model is loaded), so deleting a candidate stays
+    instant. Each touched index gets a fresh manifest and hashes file."""
+    removed: dict[str, int] = {}
+    root = settings.indexes_dir
+    if not root.exists():
+        return removed
+    for directory in sorted(p for p in root.iterdir() if p.is_dir()):
+        manifest_file = directory / mf.MANIFEST_FILE
+        if directory.name.startswith("_") or not manifest_file.exists():
+            continue  # the keyword index (or anything else that is not a vector index)
+        manifest = mf.IndexManifest.from_json(manifest_file.read_text(encoding="utf-8"))
+        store = factory.create_vector_store(manifest.dim, settings, provider=manifest.vector_store)
+        vectors_file = directory / f"{mf.VECTORS_STEM}{store.suffix}"
+        store.load(vectors_file)
+        present = sorted(set(store.ids()) & set(chunk_ids))
+        removed[manifest.emb_model] = len(present)
+        if not present:
+            continue
+        store.remove(present)
+        store.save(vectors_file)
+        hashes = {k: v for k, v in mf.read_hashes(settings, manifest.emb_model).items()
+                  if k not in set(present)}
+        files.write_text_atomic(
+            directory / mf.HASHES_FILE, json.dumps({str(k): v for k, v in sorted(hashes.items())})
+        )
+        chunks_hash = mf.chunk_set_hash(hashes.items())
+        updated = replace(
+            manifest,
+            n_vectors=store.count(),
+            chunk_set_hash=chunks_hash,
+            created_at=datetime.now(UTC).isoformat(timespec="seconds"),
+            index_version=mf.index_version(
+                manifest.emb_model, manifest.dim, manifest.doc_prefix, manifest.query_prefix,
+                manifest.budgets_fingerprint, chunks_hash,
+            ),
+        )
+        files.write_text_atomic(manifest_file, updated.to_json())
+        _log_manifest(conn, settings, updated)
+    return removed
 
 
 def verify_index(

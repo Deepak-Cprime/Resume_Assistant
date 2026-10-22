@@ -6,11 +6,11 @@ Flat search is exact and fast enough for tens of thousands of chunks; the config
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 import numpy as np
 
+from src import fsutil
 from src.providers.base import VectorHit
 from src.providers.vectorstores.common import check_batch, check_query
 
@@ -56,7 +56,7 @@ class FaissStore:
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp = path.with_name(path.name + ".tmp")
         self._faiss.write_index(self._index, str(tmp))
-        os.replace(tmp, path)
+        fsutil.replace(tmp, path)
 
     def load(self, path: Path) -> None:
         index = self._faiss.read_index(str(path))

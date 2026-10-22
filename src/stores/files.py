@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import os
 import re
 from pathlib import Path
 
+from src import fsutil
 from src.config import Settings
 
 
@@ -46,7 +46,7 @@ def write_bytes_atomic(path: Path, data: bytes) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + ".tmp")
     tmp.write_bytes(data)
-    os.replace(tmp, path)
+    fsutil.replace(tmp, path)
 
 
 def write_text_atomic(path: Path, text: str) -> None:

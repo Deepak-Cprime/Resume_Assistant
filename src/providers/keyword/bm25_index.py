@@ -9,11 +9,11 @@ same tokenizer with `is_query=True`.
 from __future__ import annotations
 
 import json
-import os
 import shutil
 from pathlib import Path
 from typing import Any
 
+from src import fsutil
 from src.providers.base import KeywordHit
 from src.providers.keyword.tokenizer import Tokenizer, get_tokenizer
 
@@ -83,8 +83,7 @@ class Bm25Index:
         (tmp / IDS_FILE).write_text(json.dumps(self._ids), encoding="utf-8")
         if self._retriever is not None:
             self._retriever.save(str(tmp / MODEL_DIR))
-        shutil.rmtree(path, ignore_errors=True)
-        os.replace(tmp, path)
+        fsutil.swap_directory(tmp, path)
 
     def load(self, path: Path) -> None:
         import bm25s

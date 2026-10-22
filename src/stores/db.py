@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS documents (
     status          TEXT NOT NULL,
     error           TEXT,
     markdown_path   TEXT,
+    chunk_fp        TEXT,               -- budgets fingerprint its chunks were built with
     created_at      TEXT NOT NULL,
     updated_at      TEXT NOT NULL
 );
@@ -228,7 +229,7 @@ def set_document_status(
 ) -> None:
     """Validate the transition and update the row. Extra `fields` may be parser,
     parser_version, markdown_path or candidate_id."""
-    allowed = {"parser", "parser_version", "markdown_path", "candidate_id"}
+    allowed = {"parser", "parser_version", "markdown_path", "candidate_id", "chunk_fp"}
     if not set(fields) <= allowed:
         raise ValueError(f"unexpected fields: {sorted(set(fields) - allowed)}")
     row = get_document(conn, doc_id)
@@ -397,3 +398,51 @@ def current_index_manifests(conn: sqlite3.Connection) -> list[sqlite3.Row]:
         "SELECT * FROM index_manifest WHERE index_version IN "
         "(SELECT MAX(index_version) FROM index_manifest GROUP BY emb_model) ORDER BY emb_model"
     ).fetchall()
+
+
+# --- pipeline queries and deletion -----------------------------------------------------
+
+PENDING_STATUSES = ("uploaded", "parsed", "structured", "extracted")  # work left to do
+
+
+def list_pending_documents(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    marks = ", ".join("?" for _ in PENDING_STATUSES)
+    return conn.execute(
+        f"SELECT * FROM documents WHERE status IN ({marks}) ORDER BY created_at, doc_id",
+        PENDING_STATUSES,
+    ).fetchall()
+
+
+def chunk_owner_documents(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    """Documents whose chunks are the live ones (an older upload of the same candidate is
+    replaced and owns none)."""
+    return conn.execute(
+        "SELECT * FROM documents WHERE doc_id IN (SELECT DISTINCT doc_id FROM chunks) "
+        "ORDER BY created_at, doc_id"
+    ).fetchall()
+
+
+def documents_of_candidate(conn: sqlite3.Connection, candidate_id: int) -> list[sqlite3.Row]:
+    return conn.execute(
+        "SELECT * FROM documents WHERE candidate_id = ? ORDER BY created_at, doc_id",
+        (candidate_id,),
+    ).fetchall()
+
+
+def candidate_chunk_ids(conn: sqlite3.Connection, candidate_id: int) -> list[int]:
+    rows = conn.execute(
+        "SELECT chunk_id FROM chunks WHERE candidate_id = ? ORDER BY chunk_id", (candidate_id,)
+    ).fetchall()
+    return [int(r["chunk_id"]) for r in rows]
+
+
+def delete_candidate_rows(conn: sqlite3.Connection, candidate_id: int) -> None:
+    """Remove a candidate with every document, experience, skill, certification and chunk."""
+    with transaction(conn):
+        conn.execute("DELETE FROM documents WHERE candidate_id = ?", (candidate_id,))
+        conn.execute("DELETE FROM candidates WHERE candidate_id = ?", (candidate_id,))  # cascades
+
+
+def delete_document_row(conn: sqlite3.Connection, doc_id: str) -> None:
+    with transaction(conn):
+        conn.execute("DELETE FROM documents WHERE doc_id = ?", (doc_id,))

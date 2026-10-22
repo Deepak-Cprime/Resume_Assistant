@@ -30,7 +30,8 @@ def corpus_lengths(
     """Unit lengths of every extracted resume (one per candidate) and the candidate count."""
     rows = conn.execute(
         "SELECT doc_id, candidate_id FROM documents WHERE candidate_id IS NOT NULL "
-        f"AND status IN ({', '.join('?' for _ in CHUNKED_OR_LATER)}) ORDER BY created_at, doc_id",
+        f"AND status IN ({', '.join('?' for _ in CHUNKED_OR_LATER)}) "
+        "ORDER BY created_at DESC, rowid DESC",  # newest upload first: it is the one that counts
         CHUNKED_OR_LATER,
     ).fetchall()
     lengths: dict[str, list[int]] = {}
@@ -100,5 +101,5 @@ def chunk_document(
         log.exception("chunking %s failed", doc_id[:12])
         db.set_document_status(conn, doc_id, "failed", error=f"chunk failed: {e}")
         return "failed"
-    db.set_document_status(conn, doc_id, "chunked")
+    db.set_document_status(conn, doc_id, "chunked", chunk_fp=budgets.fingerprint())
     return "chunked"
