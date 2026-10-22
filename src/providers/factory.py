@@ -29,6 +29,7 @@ _REGISTRY: dict[str, dict[str, str | Callable[..., Any]]] = {
     },
     "vector_store": {
         "faiss": "src.providers.vectorstores.faiss_store:FaissStore",
+        "numpy": "src.providers.vectorstores.numpy_store:NumpyStore",  # no extra dependency
     },
     "keyword": {
         "bm25s": "src.providers.keyword.bm25_index:Bm25Index",
@@ -66,7 +67,9 @@ def create_parser(name: str, settings: Settings) -> Any:
 
 def create_embedder(model_name: str, settings: Settings) -> Any:
     cfg = settings.embedding.get(model_name)
-    return _resolve("embedder", cfg.provider)(name=cfg.name)
+    return _resolve("embedder", cfg.provider)(
+        name=cfg.name, batch_size=settings.embedding.batch_size, device=settings.embedding.device
+    )
 
 
 def create_llm(settings: Settings) -> Any:
@@ -75,8 +78,10 @@ def create_llm(settings: Settings) -> Any:
     )
 
 
-def create_vector_store(dim: int, settings: Settings) -> Any:
-    return _resolve("vector_store", settings.vector_store.provider)(
+def create_vector_store(dim: int, settings: Settings, provider: str | None = None) -> Any:
+    """`provider` overrides the configured one (an existing index is opened with the store that
+    built it, whatever the config says now)."""
+    return _resolve("vector_store", provider or settings.vector_store.provider)(
         dim=dim, index=settings.vector_store.index
     )
 

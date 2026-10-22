@@ -105,3 +105,47 @@ class FakeLLM:
         if self.error:
             raise self.error
         return self.response
+
+
+class FakeEmbedder:
+    """Bag-of-words embedder: every word maps to a fixed pseudo-random vector, so texts sharing
+    words score higher. Deterministic, dependency-free, and applies prefixes like a real model."""
+
+    def __init__(
+        self,
+        name: str = "fake-embed",
+        dim: int = 32,
+        max_tokens: int = 512,
+        query_prefix: str = "query: ",
+        doc_prefix: str = "doc: ",
+    ) -> None:
+        self.name, self.dim, self.max_tokens = name, dim, max_tokens
+        self.query_prefix, self.doc_prefix = query_prefix, doc_prefix
+        self.document_calls = 0
+
+    def _vector(self, text: str):
+        import hashlib
+        import re
+
+        import numpy as np
+
+        total = np.zeros(self.dim, dtype=np.float64)
+        for word in re.findall(r"\w+", text.lower()):
+            seed = int(hashlib.md5(f"{self.name}:{word}".encode()).hexdigest()[:8], 16)
+            total += np.random.default_rng(seed).standard_normal(self.dim)
+        norm = np.linalg.norm(total)
+        return (total / norm if norm else total).astype(np.float32)
+
+    def embed_documents(self, texts):
+        import numpy as np
+
+        self.document_calls += len(texts)
+        if not texts:
+            return np.zeros((0, self.dim), dtype=np.float32)
+        return np.stack([self._vector(self.doc_prefix + t) for t in texts])
+
+    def embed_query(self, text):
+        return self._vector(self.query_prefix + text)
+
+    def count_tokens(self, text):
+        return len((self.doc_prefix + text).split())

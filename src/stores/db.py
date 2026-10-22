@@ -373,3 +373,27 @@ def count_chunks(conn: sqlite3.Connection, *, embedded_only: bool = False) -> in
 def get_chunk_budgets(conn: sqlite3.Connection, role_id: int = DEFAULT_ROLE_ID) -> dict | None:
     raw = get_role(conn, role_id)["chunk_budgets"]
     return json.loads(raw) if raw else None
+
+
+# --- index manifests -------------------------------------------------------------------
+
+
+def add_index_manifest(
+    conn: sqlite3.Connection, *, emb_model: str, dim: int, chunker_cfg: dict, n_vectors: int
+) -> int:
+    """Record one index build (history is kept; the newest row per model is current)."""
+    with transaction(conn):
+        cur = conn.execute(
+            "INSERT INTO index_manifest (emb_model, dim, chunker_cfg, n_vectors, created_at) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (emb_model, dim, json.dumps(chunker_cfg, sort_keys=True), n_vectors, _now()),
+        )
+    return int(cur.lastrowid)
+
+
+def current_index_manifests(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    """The newest manifest row of every embedding model."""
+    return conn.execute(
+        "SELECT * FROM index_manifest WHERE index_version IN "
+        "(SELECT MAX(index_version) FROM index_manifest GROUP BY emb_model) ORDER BY emb_model"
+    ).fetchall()

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 
 from src.config import Settings
@@ -14,6 +15,16 @@ def raw_path(settings: Settings, doc_id: str, ext: str) -> Path:
 
 def markdown_path(settings: Settings, doc_id: str) -> Path:
     return settings.markdown_dir / f"{doc_id}.md"
+
+
+def model_slug(model_name: str) -> str:
+    """Folder-safe model name: 'BAAI/bge-small-en-v1.5' -> 'baai_bge-small-en-v1.5'."""
+    return re.sub(r"[^\w.-]+", "_", model_name.strip().lower()).strip("_")
+
+
+def index_dir(settings: Settings, model_name: str) -> Path:
+    """One folder per embedding model: vectors, per-chunk hashes and the manifest side by side."""
+    return settings.indexes_dir / model_slug(model_name)
 
 
 def sections_path(settings: Settings, doc_id: str) -> Path:

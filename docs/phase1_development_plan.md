@@ -80,7 +80,7 @@ src/
   chunking/   chunker.py, budgets.py, enrich.py, tokens.py
   stores/     db.py, files.py
   pipeline/   run.py, delete.py, manifest.py, parse_stage.py, structure_stage.py,
-              extract_stage.py, chunk_stage.py (one module per stage)
+              extract_stage.py, chunk_stage.py, index_stage.py (one module per stage)
 configs/      config.yaml, sections_resume.yaml, skills_aliases.yaml
 data/         raw/, markdown/, profiles/, chunks/, indexes/, app.db      (gitignored)
 tests/        unit/, integration/, ui/, fixtures/, conftest.py
@@ -118,7 +118,7 @@ Build in order. Each milestone ends with its tests written and passing (section 
 | M3 | Structure | Section detection (synonyms + heuristics + fuzzy), entry splitting, date normalisation | ≥ 90% of tokens in known sections on fixtures |
 | M4 | Metadata | Regex contact fields; YOE as interval union; gaps; skill aliases (claimed vs used); Ollama JSON-schema extraction per entry with grounding check; PII masking | Field accuracy ≥ 90% on labelled fixtures |
 | M5 | Chunking | Section + entry chunker; adaptive per-section budgets stored on the role; structural prefix; profile chunk; parent links; deterministic chunk ids | 0 chunks over model limit; every experience chunk has company + dates |
-| M6 | Embeddings + vectors | sentence-transformers embedder (bge-small, bge-m3); Ollama embedder (nomic); FAISS `IndexIDMap(IndexFlatIP)` per model, persisted; manifest | Two model indexes side by side; counts match DB |
+| M6 | Embeddings + vectors | sentence-transformers embedder (bge-small); Ollama embedder (nomic, optional); FAISS `IndexIDMap(IndexFlatIP)` per model, persisted; manifest | Two model indexes side by side; counts match DB |
 | M7 | Keyword index | bm25s with tech-aware tokenizer; persisted | C#, C++, .NET stay distinct tokens |
 | M8 | Orchestration | `pipeline.run` with per-stage status, content-hash skip, re-chunk on budget change, `delete_candidate` across all stores | Idempotency and delete tests pass |
 | M9 | Streamlit UI | Four pages; `st.cache_resource` for heavy objects; progress per document | UI smoke tests pass; manual flow works |
@@ -151,7 +151,7 @@ llm:
 embedding:
   models:
     - {provider: sentence_transformers, name: BAAI/bge-small-en-v1.5}
-    - {provider: sentence_transformers, name: BAAI/bge-m3}
+    # optional challenger, runs in Ollama: - {provider: ollama, name: nomic-embed-text}
   default: BAAI/bge-small-en-v1.5
 chunking:
   strategy: section_entry

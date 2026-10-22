@@ -87,7 +87,7 @@ src/
                         docling_parser.py (optional, heavy), router.py
     embedders/          st_embedder.py (sentence-transformers), ollama_embedder.py
     llm/                ollama_llm.py
-    vectorstores/       faiss_store.py
+    vectorstores/       faiss_store.py, numpy_store.py (no extra dependency, same behaviour)
     keyword/            bm25_index.py, tokenizer.py (tech-aware)
   ingestion/            intake.py (validate, hash, dedupe), cleaning.py, validation.py (parse quality)
   structure/            sections.py (synonyms + heuristics), entries.py, dates.py, text.py
@@ -97,8 +97,8 @@ src/
                         tokens.py (model-free token estimate)
   stores/               db.py (SQLite schema + repo functions), files.py (raw/markdown paths)
   pipeline/             run.py (orchestrates stages, statuses, idempotency), delete.py, manifest.py,
-                        parse_stage.py, structure_stage.py, extract_stage.py, chunk_stage.py (one per
-                        stage; run.py calls them in order)
+                        parse_stage.py, structure_stage.py, extract_stage.py, chunk_stage.py,
+                        index_stage.py (one per stage; run.py calls them in order)
 configs/
   config.yaml           providers, models, budgets, paths
   sections_resume.yaml  canonical section synonyms
@@ -118,7 +118,7 @@ eval/                   golden_questions.yaml (drafted during Phase 1, used in P
 | M3 | Structure | section detection (synonyms + heuristics), entry splitting, date normalisation | ≥ 90% tokens in known sections on samples |
 | M4 | Metadata | regex contact fields, YOE as interval union, gaps, skill aliases (claimed vs used), Ollama JSON-schema extraction per entry with grounding check, PII masking | field accuracy ≥ 90% on hand-labelled samples |
 | M5 | Chunking | section + entry chunker, adaptive per-section budgets stored on the role, structural prefix, profile chunk, parent links, deterministic chunk ids | 0 chunks over model limit; every experience chunk has company + dates |
-| M6 | Embedding + vectors | sentence-transformers embedder (bge-small, bge-m3), Ollama embedder (nomic), FAISS `IndexIDMap(IndexFlatIP)` per model, persisted + manifest | two model indexes side by side; counts match DB |
+| M6 | Embedding + vectors | sentence-transformers embedder (bge-small), Ollama embedder (nomic, optional), FAISS `IndexIDMap(IndexFlatIP)` per model, persisted + manifest | two model indexes side by side; counts match DB |
 | M7 | Keyword index | bm25s with tech-aware tokenizer, persisted | C#, C++, .NET stay distinct tokens |
 | M8 | Orchestration | `pipeline.run` with per-stage status, content-hash skip, re-chunk on budget change, delete-everywhere | idempotency + delete tests pass |
 | M9 | Streamlit UI | the four pages above | full flow works from the browser |
@@ -138,7 +138,8 @@ eval/                   golden_questions.yaml (drafted during Phase 1, used in P
   (`docling` is optional: `requirements-docling.txt`, off by default because it needs torch),
   `pydantic`, `pyyaml`, `ollama`, `streamlit`, `pytest`.
 - Ollama: `qwen2.5:7b` (or `llama3.1:8b`) for extraction at temperature 0; `nomic-embed-text`.
-- Embedding baseline `BAAI/bge-small-en-v1.5`, challenger `BAAI/bge-m3`.
+- Embedding baseline `BAAI/bge-small-en-v1.5`; optional challenger `nomic-embed-text` via Ollama.
+  `BAAI/bge-m3` is out of scope (too heavy for the target laptop).
 
 ### Open items
 

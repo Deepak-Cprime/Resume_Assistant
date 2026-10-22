@@ -48,14 +48,17 @@ class EmbeddingProvider(Protocol):
     max_tokens: int
 
     def embed_documents(self, texts: list[str]) -> np.ndarray:
-        """Return float32 array (n, dim), L2-normalised."""
+        """Return float32 array (n, dim), L2-normalised; applies the model's document prefix."""
         ...
 
     def embed_query(self, text: str) -> np.ndarray:
         """Return float32 array (dim,), L2-normalised; applies the model's query prefix."""
         ...
 
-    def count_tokens(self, text: str) -> int: ...
+    def count_tokens(self, text: str) -> int:
+        """Tokens `text` costs when embedded as a document (prefix and special tokens included),
+        so it can be compared with `max_tokens`."""
+        ...
 
 
 @runtime_checkable
@@ -74,12 +77,20 @@ class LLMProvider(Protocol):
 @runtime_checkable
 class VectorStore(Protocol):
     dim: int
+    suffix: str  # file extension of the persisted index, e.g. ".faiss"
 
-    def add(self, ids: list[int], vectors: np.ndarray) -> None: ...
+    def add(self, ids: list[int], vectors: np.ndarray) -> None:
+        """Insert or replace: adding an id that already exists replaces its vector.
+        Vectors must be float32, shape (n, dim) and L2-normalised (inner product = cosine)."""
+        ...
 
     def remove(self, ids: list[int]) -> None: ...
 
-    def search(self, query: np.ndarray, k: int) -> list[VectorHit]: ...
+    def search(self, query: np.ndarray, k: int) -> list[VectorHit]:
+        """Best `k` hits, highest score first; fewer if the store holds fewer."""
+        ...
+
+    def ids(self) -> list[int]: ...
 
     def count(self) -> int: ...
 

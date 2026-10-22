@@ -65,6 +65,8 @@ class EmbeddingModelConfig(_Section):
 class EmbeddingConfig(_Section):
     models: list[EmbeddingModelConfig]
     default: str
+    batch_size: int = Field(32, gt=0)
+    device: str | None = None  # None = let sentence-transformers choose; "cpu" forces CPU
 
     @model_validator(mode="after")
     def _default_is_listed(self) -> EmbeddingConfig:

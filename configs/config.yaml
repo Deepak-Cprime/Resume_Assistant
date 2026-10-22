@@ -19,8 +19,11 @@ llm:
 embedding:
   models:
     - {provider: sentence_transformers, name: BAAI/bge-small-en-v1.5}
-    - {provider: sentence_transformers, name: BAAI/bge-m3}
+    # Optional challenger (runs inside Ollama, not this process; needs `ollama pull`):
+    # - {provider: ollama, name: nomic-embed-text}
   default: BAAI/bge-small-en-v1.5
+  batch_size: 32
+  device: null              # "cpu" to force CPU
 chunking:
   strategy: section_entry
   model_limit: 512          # smallest max_tokens among embedding.models (shared chunks)
