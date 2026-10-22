@@ -75,11 +75,12 @@ src/
   config.py
   providers/  base.py, factory.py, parsers/, embedders/, llm/, vectorstores/, keyword/
   ingestion/  intake.py, cleaning.py, validation.py
-  structure/  sections.py, entries.py, dates.py
-  metadata/   schema.py, regex_extract.py, llm_extract.py, skills.py, pii.py
-  chunking/   chunker.py, budgets.py, enrich.py
+  structure/  sections.py, entries.py, dates.py, text.py
+  metadata/   schema.py, regex_extract.py, llm_extract.py, skills.py, pii.py, yoe.py, profile.py
+  chunking/   chunker.py, budgets.py, enrich.py, tokens.py
   stores/     db.py, files.py
-  pipeline/   run.py, delete.py, manifest.py, parse_stage.py (one module per stage)
+  pipeline/   run.py, delete.py, manifest.py, parse_stage.py, structure_stage.py,
+              extract_stage.py, chunk_stage.py (one module per stage)
 configs/      config.yaml, sections_resume.yaml, skills_aliases.yaml
 data/         raw/, markdown/, profiles/, chunks/, indexes/, app.db      (gitignored)
 tests/        unit/, integration/, ui/, fixtures/, conftest.py
@@ -241,7 +242,7 @@ belong to real people.
 | Resumes with ≥ 4 known sections | ≥ 95% |
 | Metadata field accuracy (company, title, dates, degree) | ≥ 90% per field |
 | YOE within ±0.5 years of ground truth | ≥ 90% of fixtures |
-| Chunks under `min_tok` | < 5% |
+| Chunks under `min_tok` | < 5% (measured on realistic 5-10 year resumes in M10 QA; the synthetic fixtures have 2 short bullets per job, so the unit test only reports it) |
 | Chunks over model limit | 0 |
 | Experience chunks containing company and dates | 100% |
 | Store count mismatch (DB vs FAISS vs BM25) | 0 |

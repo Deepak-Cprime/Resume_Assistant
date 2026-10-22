@@ -2,40 +2,13 @@
 ground truth in tests/fixtures/specs. Thresholds are the Phase 1 gates (plan section 7.5).
 Uses rules only (no LLM), so it is deterministic and runs by default."""
 
-from datetime import date
-from pathlib import Path
-
-import pytest
-
-from src.config import load_settings
-from src.metadata.profile import build_profile
-from src.providers.parsers import router
 from src.structure.sections import known_labels, known_token_share, split_sections
 from src.structure.text import normalize_key
 
-pytest.importorskip("pymupdf4llm")
-
-AS_OF = date(2025, 6, 1)
+# `parsed` (cleaned Markdown) and `profiles` (CandidateProfile) per fixture come from conftest.
 FIELD_GATE = 0.90
 YOE_TOLERANCE = 0.5
 MIN_SECTIONS = 4
-
-
-@pytest.fixture(scope="module")
-def parsed(fixture_files):
-    """Markdown per fixture, parsed once for the whole module (OCR makes one of them slow)."""
-    settings = load_settings()
-    out = {}
-    for spec_id, path in fixture_files.items():
-        doc_type = "docx" if Path(path).suffix == ".docx" else "pdf"
-        outcome = router.parse_resume(path, doc_type, settings)
-        out[spec_id] = outcome.markdown
-    return out
-
-
-@pytest.fixture(scope="module")
-def profiles(parsed):
-    return {k: build_profile(md, as_of=AS_OF) for k, md in parsed.items()}
 
 
 def same(a: str, b: str) -> bool:

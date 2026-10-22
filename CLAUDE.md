@@ -90,12 +90,15 @@ src/
     vectorstores/       faiss_store.py
     keyword/            bm25_index.py, tokenizer.py (tech-aware)
   ingestion/            intake.py (validate, hash, dedupe), cleaning.py, validation.py (parse quality)
-  structure/            sections.py (synonyms + heuristics), entries.py, dates.py
-  metadata/             schema.py (Pydantic), regex_extract.py, llm_extract.py, skills.py, pii.py
-  chunking/             chunker.py (section + entry), budgets.py (adaptive), enrich.py
+  structure/            sections.py (synonyms + heuristics), entries.py, dates.py, text.py
+  metadata/             schema.py (Pydantic), regex_extract.py, llm_extract.py (optional, grounded),
+                        skills.py, pii.py, yoe.py (interval union + gaps), profile.py (assembles all)
+  chunking/             chunker.py (section + entry), budgets.py (adaptive), enrich.py (prefix, PII),
+                        tokens.py (model-free token estimate)
   stores/               db.py (SQLite schema + repo functions), files.py (raw/markdown paths)
   pipeline/             run.py (orchestrates stages, statuses, idempotency), delete.py, manifest.py,
-                        parse_stage.py (one stage per module; run.py calls them in order)
+                        parse_stage.py, structure_stage.py, extract_stage.py, chunk_stage.py (one per
+                        stage; run.py calls them in order)
 configs/
   config.yaml           providers, models, budgets, paths
   sections_resume.yaml  canonical section synonyms

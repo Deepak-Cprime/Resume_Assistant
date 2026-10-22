@@ -70,15 +70,21 @@ CREATE TABLE IF NOT EXISTS certifications (
     PRIMARY KEY (candidate_id, name)
 );
 CREATE TABLE IF NOT EXISTS chunks (
-    chunk_id      INTEGER PRIMARY KEY,
+    chunk_id      INTEGER PRIMARY KEY,          -- 60-bit hash of chunk_key (FAISS needs ints)
+    chunk_key     TEXT NOT NULL UNIQUE,         -- readable, deterministic: c12-exp-1-p1
     candidate_id  INTEGER NOT NULL REFERENCES candidates(candidate_id) ON DELETE CASCADE,
     role_id       INTEGER NOT NULL REFERENCES roles(role_id),
     doc_id        TEXT NOT NULL,
-    level         TEXT,
+    level         INTEGER NOT NULL,             -- 0 profile, 1 section, 2 entry
     parent_id     INTEGER,
     section       TEXT,
-    text          TEXT NOT NULL,
-    embed_text    TEXT NOT NULL,
+    entry_title   TEXT,
+    start         TEXT,
+    end           TEXT,
+    skills        TEXT,                         -- JSON list of skill tags
+    text          TEXT NOT NULL,                -- shown to the user and cited
+    embed_text    TEXT NOT NULL,                -- prefix + masked text + tags (embedded, BM25)
+    embed         INTEGER NOT NULL DEFAULT 1,   -- 0 = stored parent, not embedded
     n_tokens      INTEGER,
     page          INTEGER,
     content_hash  TEXT
@@ -322,3 +328,48 @@ def list_certifications(conn: sqlite3.Connection, candidate_id: int) -> list[sql
     return conn.execute(
         "SELECT * FROM certifications WHERE candidate_id = ? ORDER BY name", (candidate_id,)
     ).fetchall()
+
+
+# --- chunks and budgets ----------------------------------------------------------------
+
+_CHUNK_COLUMNS = (
+    "chunk_id", "chunk_key", "candidate_id", "role_id", "doc_id", "level", "parent_id",
+    "section", "entry_title", "start", "end", "skills", "text", "embed_text", "embed",
+    "n_tokens", "page", "content_hash",
+)
+
+
+def replace_chunks(
+    conn: sqlite3.Connection, candidate_id: int, chunks: list[dict], role_id: int = DEFAULT_ROLE_ID
+) -> None:
+    """Swap a candidate's chunks for a new set in one transaction (re-running never duplicates)."""
+    placeholders = ", ".join("?" for _ in _CHUNK_COLUMNS)
+    rows = [tuple({**c, "role_id": role_id}[k] for k in _CHUNK_COLUMNS) for c in chunks]
+    with transaction(conn):
+        conn.execute("DELETE FROM chunks WHERE candidate_id = ?", (candidate_id,))
+        conn.executemany(
+            f"INSERT INTO chunks ({', '.join(_CHUNK_COLUMNS)}) VALUES ({placeholders})", rows
+        )
+
+
+def list_chunks(
+    conn: sqlite3.Connection, *, candidate_id: int | None = None, embedded_only: bool = False
+) -> list[sqlite3.Row]:
+    where, args = [], []
+    if candidate_id is not None:
+        where.append("candidate_id = ?")
+        args.append(candidate_id)
+    if embedded_only:
+        where.append("embed = 1")
+    clause = f" WHERE {' AND '.join(where)}" if where else ""
+    return conn.execute(f"SELECT * FROM chunks{clause} ORDER BY chunk_id", args).fetchall()
+
+
+def count_chunks(conn: sqlite3.Connection, *, embedded_only: bool = False) -> int:
+    sql = "SELECT COUNT(*) FROM chunks" + (" WHERE embed = 1" if embedded_only else "")
+    return int(conn.execute(sql).fetchone()[0])
+
+
+def get_chunk_budgets(conn: sqlite3.Connection, role_id: int = DEFAULT_ROLE_ID) -> dict | None:
+    raw = get_role(conn, role_id)["chunk_budgets"]
+    return json.loads(raw) if raw else None

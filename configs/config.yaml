@@ -23,6 +23,7 @@ embedding:
   default: BAAI/bge-small-en-v1.5
 chunking:
   strategy: section_entry
+  model_limit: 512          # smallest max_tokens among embedding.models (shared chunks)
   budgets:
     mode: adaptive_per_section
     p_low: 20
@@ -30,6 +31,9 @@ chunking:
     min_clamp: [64, 128]
     max_clamp: [256, null]
     prefix_reserve: 32
+    min_units: 10           # fewer units than this per section type -> fixed defaults
+    default_max: 400
+    growth_trigger: 0.5     # recompute budgets when the corpus grows by 50%
 vector_store: {provider: faiss, index: flat_ip}
 keyword: {provider: bm25s, tokenizer: tech_aware}
 metadata:

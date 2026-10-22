@@ -86,6 +86,11 @@ class BudgetsConfig(_Section):
     min_clamp: tuple[int, int] = (64, 128)
     max_clamp: tuple[int, int | None] = (256, None)
     prefix_reserve: int = Field(32, ge=0)
+    # Percentiles of fewer units than this are too noisy; use min_clamp[0] / default_max instead.
+    min_units: int = Field(10, ge=1)
+    default_max: int = Field(400, ge=1)
+    # Budgets are computed once and kept; recompute when the corpus grows by this fraction.
+    growth_trigger: float = Field(0.5, gt=0)
 
     @model_validator(mode="after")
     def _percentiles_ordered(self) -> BudgetsConfig:
@@ -96,6 +101,9 @@ class BudgetsConfig(_Section):
 
 class ChunkingConfig(_Section):
     strategy: str = "section_entry"
+    # Chunks are shared by every embedding model, so this is the SMALLEST max_tokens among
+    # embedding.models (bge-small-en-v1.5 = 512), not the largest.
+    model_limit: int = Field(512, gt=0)
     budgets: BudgetsConfig = BudgetsConfig()
 
 
