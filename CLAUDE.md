@@ -46,9 +46,37 @@ Only after the user has read and agreed with the guide does work on that phase b
 
 ## Guide status
 
-- Phase 1 (Indexing): `docs/guides/phase1_indexing_guide.html` — reviewed and approved; development may start
-- Phase 2 (Retrieval + generation): not started
-- Phase 3 (Quality): not started
+- Phase 1 (Indexing): `docs/guides/phase1_indexing_guide.html` — approved; implemented (M0–M9)
+- Phase 2 (Retrieval + generation): `docs/guides/phase2_retrieval_guide.html` — drafted, awaiting
+  the user's review; plan in `docs/phase2_development_plan.md`. No Phase 2 code until approved.
+- Phase 3 (Quality): `docs/guides/phase3_quality_guide.html` — drafted, awaiting review; plan in
+  `docs/phase3_development_plan.md`. Starts after Phase 2 is done.
+
+## Phase 2 and 3 key decisions (details in the plan documents)
+
+- Phase 2 keeps the laptop constraint: CPU reranker `cross-encoder/ms-marco-MiniLM-L-6-v2`,
+  Ollama `qwen2.5:7b` with explicit `num_ctx` (`qwen2.5:3b` as the fast option), streaming.
+- Routing: rule-based intents first, Ollama JSON fallback; structured questions answered with
+  templated, parameterised SQL (never LLM-written SQL).
+- Retrieval: whole-index dense + BM25 search, filtered by candidate afterwards (no change to the
+  Phase 1 `VectorStore` / `KeywordIndex` Protocols); weighted RRF (k = 60); rerank top 30.
+- Candidate ranking is computed in code (requirement coverage, must-have gate, used > claimed);
+  the LLM explains rankings, never produces them.
+- Prompts use candidate ids (`C12`), never names; citations are `chunk_key`s and are validated
+  in code; resume text is treated as untrusted data (prompt-injection detection).
+- Only additive interface changes: `Reranker` Protocol, `LLMProvider.stream`, `roles.jd_hash` and
+  `roles.jd_requirements` columns.
+- Every question writes a JSONL trace (`data/traces/`), which Phase 3 consumes.
+- Phase 3 labels golden questions by evidence quotes (resolved to chunks at eval time), never by
+  chunk id; LLM judge from a different model family, calibrated (Cohen's kappa ≥ 0.6);
+  paired bootstrap CIs; dev/test split; regression gate with fakes in pytest and real models locally.
+
+## Open items carried from Phase 1
+
+- `eval/golden_questions.yaml` holds 48 seed questions (evidence-quote format, validated by
+  `tests/integration/test_golden_questions.py`). Phase 3 milestones Q0-Q1 grow it to 80+.
+- M10 remaining for the user: run coverage (`pytest --cov=src`), the manual QA checklist
+  (plan section 7.6), and `scripts/parse_report.py --dir local_resumes`; then mark Phase 1 closed.
 
 ## Phase 1 development plan
 
