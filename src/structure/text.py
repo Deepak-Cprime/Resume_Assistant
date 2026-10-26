@@ -33,6 +33,18 @@ def normalize_key(text: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"[^\w\s]", " ", text.casefold())).strip()
 
 
+_CREDENTIALS = re.compile(
+    r"\s*[,(]\s*(?:ph\.?\s?d|m\.?\s?b\.?\s?a|m\.?\s?sc?|b\.?\s?sc?|m\.?\s?d|p\.?\s?e|pmp|cpa|"
+    r"cissp|cfa|esq|phd|msc|mba)\b\.?\)?(?:\s*[,/]\s*[A-Za-z.]+)*\s*$",
+    re.IGNORECASE,
+)
+
+
+def strip_credentials(text: str) -> str:
+    """'Mei Tanaka, PhD' -> 'Mei Tanaka' (degrees and certifications after a name)."""
+    return _CREDENTIALS.sub("", text).strip()
+
+
 def looks_like_name(text: str) -> bool:
     """2-4 capitalised alphabetic words, e.g. 'Priya Raman' or 'Lucía Fernández'."""
     words = text.split()

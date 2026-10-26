@@ -26,6 +26,8 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.ruff.lint.per-file-ignores]
 # Streamlit pages put the project root on sys.path before importing `src`.
 "app/**" = ["E402"]
+# Resume text is data: long lines of prose inside HTML strings are expected.
+"scripts/make_realistic_resumes.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.11"

@@ -23,6 +23,7 @@ from src.structure.dates import find_range
 from src.structure.text import (
     CERT_RE,
     SCHOOL_RE,
+    TITLE_RE,
     is_bullet,
     is_degree_line,
     looks_like_name,
@@ -48,7 +49,7 @@ class Section:
     label: str  # canonical label, "header" (text before the first heading) or "unknown"
     heading: str  # heading as written; "" for header and inferred sections
     lines: list[str]
-    method: str  # synonym | fuzzy | inline | unknown | preamble | heuristic
+    method: str  # synonym | compound | fuzzy | inline | unknown | preamble | heuristic
     start: int  # index of the heading line in the document
 
     @property
@@ -73,6 +74,14 @@ class SectionMatcher:
 
     def lookup(self, text: str) -> str | None:
         return self.exact.get(normalize_key(text))
+
+    def lookup_compound(self, text: str) -> str | None:
+        """'Certifications and Training' / 'Publications & Talks': one known part is enough,
+        the first one wins ('Skills and Interests' is a skills section)."""
+        for part in normalize_key(text).split(" and "):
+            if label := self.exact.get(part.strip()):
+                return label
+        return None
 
     def fuzzy(self, text: str) -> str | None:
         key = normalize_key(text)
@@ -112,6 +121,8 @@ class SectionMatcher:
         if label := self.lookup(text):
             return Heading(label, text, "synonym")
         emphasised = is_md or is_bold or (text.isupper() and sum(c.isalpha() for c in text) >= 3)
+        if emphasised and (label := self.lookup_compound(text)):
+            return Heading(label, text, "compound")
         if emphasised and (label := self.fuzzy(text)):
             return Heading(label, text, "fuzzy")
         level = len(s) - len(s.lstrip("#")) if is_md else 0
@@ -129,6 +140,8 @@ class SectionMatcher:
         if level > MAX_UNKNOWN_LEVEL or len(text.split()) > MAX_UNKNOWN_WORDS:
             return False
         if re.search(r"[\d@|,]", text) or is_degree_line(text) or SCHOOL_RE.search(text):
+            return False
+        if TITLE_RE.search(text):  # the subtitle under the name ("Staff Platform Engineer")
             return False
         # '# Priya Raman' (level 1) is the name; '## Volunteer Work' is an unknown section.
         return not (level == 1 and looks_like_name(text))

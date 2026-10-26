@@ -22,6 +22,7 @@ from src.structure.text import (
 )
 
 MAX_HEADER_WORDS = 14  # a dated line with more words around the range is prose, not a header
+MAX_ROLE_WORDS = 8  # a job title line under a company header is short
 MAX_PROSE_WORDS = 8  # a sentence (ends with '.') longer than this is body text, not a header
 MAX_TITLE_WORDS = 15
 MAX_CERT_WORDS = 14
@@ -36,7 +37,7 @@ _FIELD_WORDS = {
 }
 MAX_SCHOOL_PREFIX_WORDS = 2
 _STATE_CODE = re.compile(r"[A-Z]{2}$")  # a bare "MA" after "Boston," is a state, not a degree
-_EDU_SEGMENTS =re.compile(r"\s*[|;]\s*|,\s+|\s+[–—-]\s+")
+_EDU_SEGMENTS = re.compile(r"\s*[|;]\s*|,\s+|\s+[–—-]\s+")
 
 
 @dataclass
@@ -50,6 +51,24 @@ class RawEntry:
 
 def _is_title_candidate(plain: str) -> bool:
     return bool(plain) and len(plain.split()) <= MAX_TITLE_WORDS and not plain.endswith(".")
+
+
+# PDF converters sometimes write a bold company line as a list item: "- **Nimbus Retail** , Pune".
+_BOLD_BULLET = re.compile(r"^\s*[-*•]\s+\*\*")
+
+
+def _is_content_bullet(line: str) -> bool:
+    """A real bullet point, as opposed to a header line that a converter formatted as one:
+    a bold company name, or nothing but a date range ('- January 2015 - March 2019')."""
+    if not is_bullet(line) or _BOLD_BULLET.match(line):
+        return False
+    text = strip_md(line)
+    rng = find_range(text)
+    if rng is not None:
+        before, after = strip_range(text, rng)
+        if not (before or after):
+            return False
+    return True
 
 
 def _explode_inline_entry(line: str) -> list[str]:
@@ -77,7 +96,7 @@ def split_entries(lines: list[str]) -> list[RawEntry]:
     plain = {i: strip_md(lines[i]) for i in idx}
     dated: dict[int, DateRange] = {}
     for i in idx:
-        if is_bullet(lines[i]):
+        if _is_content_bullet(lines[i]):
             continue
         rng = find_range(plain[i])
         if rng is None:
@@ -131,7 +150,7 @@ def split_entries(lines: list[str]) -> list[RawEntry]:
 
 
 def _usable_header(lines: list[str], plain: dict[int, str], dated: dict, i: int) -> bool:
-    return i not in dated and not is_bullet(lines[i]) and _is_title_candidate(plain[i])
+    return i not in dated and not _is_content_bullet(lines[i]) and _is_title_candidate(plain[i])
 
 
 def _stacked_header(lines: list[str], plain: dict[int, str], dated: dict, above: list[int]) -> bool:
@@ -171,11 +190,35 @@ def classify_header(texts: list[str]) -> tuple[str, str, str]:
     return (text, "", "low") if TITLE_RE.search(text) else ("", text, "low")
 
 
+def _title_below_company(
+    raw: RawEntry, title: str, company: str
+) -> tuple[str, str, str, list[str]] | None:
+    """A header that is only 'Company, City' (no job title in it) followed by a line holding the
+    title: returns (title, company, city, remaining body), else None."""
+    if not raw.body or any(TITLE_RE.search(t) for t in raw.header):
+        return None
+    first_line = raw.body[0]
+    first = strip_md(first_line)
+    if is_bullet(first_line) or not TITLE_RE.search(first) or first.endswith("."):
+        return None
+    if len(first.split()) > MAX_ROLE_WORDS:
+        return None
+    name, city = (title, company) if title else (company, "")
+    return first, name, city, raw.body[1:]
+
+
 def parse_experience(raw: RawEntry) -> Experience:
     title, company, confidence = classify_header(raw.header)
+    location = raw.location
+    body = raw.body
+    below = _title_below_company(raw, title, company)
+    if below is not None:
+        title, company, city, body = below
+        location = location or city
+        confidence = "high"
     bullets: list[str] = []
     description: list[str] = []
-    for line in raw.body:
+    for line in body:
         if is_bullet(line):
             bullets.append(bullet_text(line))
         elif bullets:
@@ -186,7 +229,7 @@ def parse_experience(raw: RawEntry) -> Experience:
     return Experience(
         title=title,
         company=company,
-        location=raw.location,
+        location=location,
         start=rng.start.iso() if rng else None,
         end=rng.end.iso() if rng and rng.end else None,
         is_current=bool(rng and rng.is_current),
@@ -197,8 +240,42 @@ def parse_experience(raw: RawEntry) -> Experience:
     )
 
 
+def _is_role_only(exp: Experience) -> bool:
+    return bool(exp.title) and not exp.company
+
+
 def parse_experiences(lines: list[str]) -> list[Experience]:
-    return [parse_experience(e) for e in split_entries(lines)]
+    """Jobs in reading order. Resumes often list a company once with its dates and then several
+    roles under it ('Zenith Cloud, Bengaluru, 2021 - now' / 'Staff Engineer (2023 - now)' / ...).
+    Such a company line has no text of its own; each role below it takes its company and, when
+    it has none, its dates."""
+    raws = split_entries(lines)
+    parsed = [parse_experience(r) for r in raws]
+    out: list[Experience] = []
+    carry: Experience | None = None  # the company line currently in force
+    for i, (raw, exp) in enumerate(zip(raws, parsed, strict=True)):
+        following = parsed[i + 1] if i + 1 < len(parsed) else None
+        if (
+            not raw.body
+            and following is not None
+            and _is_role_only(following)
+            and not any(TITLE_RE.search(t) for t in raw.header)
+        ):
+            # classify_header read 'Company, City' as (title, company); it is (company, city)
+            name, city = (exp.title, exp.company) if exp.title else (exp.company, "")
+            exp.company, exp.location, exp.title = name, city or exp.location, ""
+            carry = exp
+            continue
+        if carry is not None and _is_role_only(exp):
+            exp.company = carry.company
+            exp.location = exp.location or carry.location
+            if exp.start is None:
+                exp.start, exp.end, exp.is_current = carry.start, carry.end, carry.is_current
+            exp.confidence = "high"
+        elif exp.company:
+            carry = None
+        out.append(exp)
+    return out
 
 
 # --- education --------------------------------------------------------------------------

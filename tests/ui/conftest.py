@@ -45,8 +45,10 @@ def env(tmp_path, monkeypatch):
 def open_page(env):
     from streamlit.testing.v1 import AppTest
 
-    def open_(relative: str, **kwargs):
-        return AppTest.from_file(str(APP_DIR / relative), default_timeout=60).run(**kwargs)
+    def open_(relative: str, mode: str = "Developer", **kwargs):
+        at = AppTest.from_file(str(APP_DIR / relative), default_timeout=60)
+        at.session_state["view_mode"] = mode
+        return at.run(**kwargs)
 
     return open_
 

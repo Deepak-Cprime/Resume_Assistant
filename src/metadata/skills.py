@@ -22,6 +22,7 @@ DEFAULT_ALIASES_PATH = PROJECT_ROOT / "configs" / "skills_aliases.yaml"
 _BEFORE = r"(?<![\w+#.])"
 _AFTER = r"(?![\w+#]|\.\w)"
 _LIST_SPLIT = re.compile(r"[,;|•·\n]+")
+_BOLD_LABEL = re.compile(r"[ \t]*(\*\*[^*\n]{2,40}:\*\*)")
 _CATEGORY_PREFIX = re.compile(r"^\s*[\w &/+#.\-]{2,30}:\s+")
 MAX_ITEM_WORDS = 4
 
@@ -78,6 +79,9 @@ class SkillVocabulary:
 
         Known skills are normalised; unknown short items are kept as written."""
         items: list[str] = []
+        # PDF converters join "Languages: Go, SQL<br>Cloud: AWS" into one paragraph; restore the
+        # line break in front of every bold "Label:" so each category is read on its own.
+        text = _BOLD_LABEL.sub(r"\n\1", text)
         for line in text.splitlines():
             line = _CATEGORY_PREFIX.sub("", strip_md(line))
             for part in _LIST_SPLIT.split(line):

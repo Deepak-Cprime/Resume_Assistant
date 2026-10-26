@@ -17,6 +17,7 @@ from src.metadata.regex_extract import (
 from src.metadata.schema import (
     CandidateProfile,
     Contact,
+    Education,
     Experience,
     SectionInfo,
     SkillEvidence,
@@ -26,6 +27,7 @@ from src.metadata.yoe import DEFAULT_GAP_MONTHS, compute_yoe, intervals, months_
 from src.providers.base import LLMProvider
 from src.structure.entries import parse_certifications, parse_education, parse_experiences
 from src.structure.sections import (
+    Section,
     SectionMatcher,
     known_token_share,
     load_matcher,
@@ -41,6 +43,34 @@ SENIORITY_BY_TITLE = (
     ("senior", ("senior", "sr.", "sr ")),
 )
 MID_YEARS, SENIOR_YEARS = 2.0, 5.0
+
+
+# Sections a misplaced job or degree can end up in: a job that continues on page 2 after a
+# sidebar lands under whatever sidebar heading came last, and a resume whose timeline has no
+# "Experience" heading leaves its jobs under the opening summary.
+MISPLACED_FROM = {
+    "summary", "awards", "unknown", "other", "interests", "languages", "volunteering",
+    "skills", "certifications",
+}
+
+
+def _jobs_outside_experience(sections: list[Section]) -> list[Experience]:
+    """Entries that read like a job (company, title, dates and bullets) found elsewhere."""
+    found: list[Experience] = []
+    for s in sections:
+        if s.label in MISPLACED_FROM:
+            found += [
+                e for e in parse_experiences(s.lines)
+                if e.start and e.title and e.company and e.bullets and e.confidence == "high"
+            ]
+    return found
+
+
+def _education_outside_section(sections: list[Section]) -> list[Education]:
+    """Degrees (with their school) found elsewhere; both are required, to avoid mistaking a
+    certification such as 'Professional Scrum Master' for a degree."""
+    lines = [ln for s in sections if s.label in MISPLACED_FROM for ln in s.lines]
+    return [e for e in parse_education(lines) if e.degree and e.school]
 
 
 def seniority(title: str, total_yoe: float) -> str:
@@ -112,9 +142,13 @@ def build_profile(
     name = find_name(markdown.splitlines(), matcher)
 
     experiences = parse_experiences(section_lines(sections, "experience"))
+    misplaced = _jobs_outside_experience(sections)
+    experiences += misplaced
     if llm is not None:
         llm_extract.enrich(llm, experiences)
     education = parse_education(section_lines(sections, "education"))
+    if not education:
+        education = _education_outside_section(sections)
     certifications = parse_certifications(section_lines(sections, "certifications"))
     skills = _skill_evidence(
         vocab,
@@ -133,6 +167,8 @@ def build_profile(
         if not present:
             warnings.append(f"no {label} found")
     warnings += [f"unknown section: {s.heading}" for s in sections if s.label == "unknown"]
+    if misplaced:
+        warnings.append(f"{len(misplaced)} job(s) were found outside the experience section")
     if undated := sum(1 for e in experiences if not e.start):
         warnings.append(f"{undated} experience entries have no start date")
     if low := sum(1 for e in experiences if e.confidence != "high"):

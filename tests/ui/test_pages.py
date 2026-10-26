@@ -209,3 +209,65 @@ def test_delete_needs_confirmation(open_page, env, add_resumes):
     at = open_page("pages/3_Index.py")
     assert at.button(key="delete_btn").disabled
     assert db.count_candidates(env.conn) == 2
+
+
+# --- optional role, user / developer view ---------------------------------------------
+
+
+def test_resumes_can_be_indexed_without_a_role_or_job_description(open_page, env, add_resumes):
+    add_resumes(*SPECS)
+    role = db.get_role(env.conn)
+    assert (role["title"], role["jd_text"]) == ("", "")
+    at = open_page("Home.py")
+    assert not at.exception
+    assert any("No job description yet" in c.value for c in at.caption)
+
+
+def test_a_saved_job_description_is_announced(open_page, env):
+    db.update_role(env.conn, title="Backend Engineer", jd_text="Go, Kubernetes")
+    at = open_page("Home.py")
+    assert any("Backend Engineer" in c.value for c in at.caption)
+
+
+def test_clearing_the_job_description_is_allowed(open_page, env):
+    db.update_role(env.conn, title="x", jd_text="y")
+    at = open_page("Home.py")
+    at.text_input(key="role_title").set_value("")
+    at.text_area(key="jd_text").set_value("")
+    at.button(key="save_role").click().run()
+    assert not at.exception
+    assert db.get_role(env.conn)["jd_text"] == ""
+
+
+@pytest.mark.parametrize("page", PAGES)
+def test_every_page_renders_in_user_mode(open_page, add_resumes, page):
+    add_resumes(*SPECS)
+    assert not open_page(page, mode="User").exception
+
+
+def test_user_mode_hides_the_pipeline_internals(open_page, add_resumes):
+    add_resumes(*SPECS)
+    home = open_page("Home.py", mode="User")
+    assert "Chunks" not in {m.label for m in home.metric}
+    assert "chunks" not in home.dataframe[0].value.columns
+
+    inspect = open_page("pages/2_Inspect.py", mode="User")
+    assert [t.label for t in inspect.tabs] == ["Candidate", "Original file"]
+
+    index = open_page("pages/3_Index.py", mode="User")
+    assert not index.multiselect and not any(b.key == "rebuild_btn" for b in index.button)
+    assert not index.dataframe or "embedding model" not in index.dataframe[0].value.columns
+
+
+def test_developer_mode_shows_the_internals(open_page, add_resumes):
+    add_resumes(*SPECS)
+    inspect = open_page("pages/2_Inspect.py", mode="Developer")
+    assert [t.label for t in inspect.tabs] == ["Raw file", "Markdown", "Sections", "Metadata",
+                                               "Chunks"]
+
+
+def test_switching_the_view_changes_the_page(open_page, add_resumes):
+    add_resumes(*SPECS)
+    at = open_page("pages/2_Inspect.py", mode="User")
+    at.radio(key="view_mode").set_value("Developer").run()
+    assert len(at.tabs) == 5

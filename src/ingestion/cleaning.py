@@ -25,8 +25,15 @@ _CHAR_MAP = str.maketrans(
     }
 )
 
-# lowercase fragment + hyphen + line break + lowercase continuation: "exper-\nience"
-_HYPHEN_BREAK = re.compile(r"(?<![\w-])([a-z]{2,})-\n([a-z]{2,})")
+# word + hyphen + line break + word: "exper-\nience", "customer-\nvisible", "ananya-\nkrishnan"
+_HYPHEN_BREAK = re.compile(r"(?<![\w-])([A-Za-z]{2,})-\n([a-z]{2,})")
+# What follows the hyphen when a long word was split by the typesetter ("informa-tion"). In a
+# resume a trailing hyphen is far more often a real one (compounds, URLs), so only these
+# word endings are glued back; everything else keeps its hyphen.
+_WORD_ENDING = re.compile(
+    r"(?:tion|sion|ment|ing|ity|ness|able|ible|ence|ience|ance|ally|ous|ive|ize|ise|ical|ular"
+    r"|ated|ation|ure)s?"
+)
 # ':' and '.' are what OCR makes of a bullet glyph; a line never starts with them otherwise.
 _BULLET = re.compile(r"(?m)^([ \t]*)(?:[•▪◦●■□➢➤►▸‣⁃·–:.]|[-*])[ \t]+")
 _MAX_FOOTER_LEN = 80
@@ -63,14 +70,32 @@ def drop_repeated_lines(pages: list[str]) -> list[str]:
     ]
 
 
+def _rejoin(match: re.Match[str]) -> str:
+    left, right = match.groups()
+    if _WORD_ENDING.fullmatch(right):
+        return left + right  # typesetter hyphenation: "informa-\ntion" -> "information"
+    return f"{left}-{right}"  # a real hyphen that happened to end the line: keep it
+
+
 def join_hyphenated(text: str) -> str:
-    """Rejoin words split across lines. Only lowercase-start fragments are joined, so
-    'Full-\\nstack' is left alone; 'cross-\\nfunctional' is joined wrongly (accepted trade-off)."""
-    return _HYPHEN_BREAK.sub(r"\1\2", text)
+    """Remove the line break after a trailing hyphen. 'informa-\\ntion' becomes 'information';
+    'customer-\\nvisible' and a URL such as 'in/ananya-\\nkrishnan' keep their hyphen."""
+    return _HYPHEN_BREAK.sub(_rejoin, text)
+
+
+# A converter that merges a whole block into one paragraph leaves bullet glyphs mid-line, and a
+# date-first entry ("2018 - 2019 **Web Developer** ...") then looks like a list item.
+_MIDLINE_BULLET = re.compile(r"(?<=\S)[ \t]+[•▪◦●■□➢➤►▸‣⁃][ \t]+")
+_DATE_FIRST_ITEM = re.compile(
+    r"(?mi)^[ \t]*[-*][ \t]+"
+    r"(?=(?:19|20)\d{2}(?:[ \t]*[-–][ \t]*(?:(?:19|20)\d{2}|present|now))?[ \t]+\*\*)"
+)
 
 
 def normalize_bullets(text: str) -> str:
-    return _BULLET.sub(r"\1- ", text)
+    text = _MIDLINE_BULLET.sub("\n- ", text)
+    text = _BULLET.sub(r"\1- ", text)
+    return _DATE_FIRST_ITEM.sub("", text)
 
 
 def tidy_whitespace(text: str) -> str:

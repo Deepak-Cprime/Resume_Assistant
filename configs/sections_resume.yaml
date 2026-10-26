@@ -2,14 +2,14 @@
 # Matching ignores case, accents and punctuation: "Education & Training" matches
 # "education and training"; "Educación" matches "educacion".
 sections:
-  summary: [summary, professional summary, executive summary, career summary, profile, professional profile, about me, about, objective, career objective, personal statement, resumen, resumen profesional, perfil, perfil profesional, objetivo]
-  experience: [experience, work experience, professional experience, work history, employment history, employment, career history, relevant experience, industry experience, experiencia, experiencia laboral, experiencia profesional, historial laboral]
+  summary: [summary, professional summary, executive summary, career summary, profile, professional profile, about me, about, objective, career objective, personal statement, resumen, resumen profesional, perfil, perfil profesional, objetivo, key achievements, career highlights, highlights, professional highlights, research interests, research summary]
+  experience: [experience, work experience, professional experience, work history, employment history, employment, career history, relevant experience, industry experience, experiencia, experiencia laboral, experiencia profesional, historial laboral, professional background, career, relevant work experience, work experience and projects]
   education: [education, education and training, academic background, academic qualifications, qualifications, educational background, educacion, formacion, formacion academica, estudios]
-  skills: [skills, technical skills, core competencies, key skills, competencies, skills and tools, technologies, tech stack, technical proficiencies, areas of expertise, expertise, habilidades, competencias, habilidades tecnicas, conocimientos]
-  certifications: [certifications, certificates, licenses, licenses and certifications, certifications and licenses, professional certifications, courses and certifications, certificaciones, certificados]
-  projects: [projects, personal projects, selected projects, key projects, side projects, proyectos]
-  awards: [awards, honors, honors and awards, achievements, accomplishments, awards and achievements, premios, logros]
-  publications: [publications, papers, patents, publicaciones]
+  skills: [skills, technical skills, core competencies, key skills, competencies, skills and tools, technologies, tech stack, technical proficiencies, areas of expertise, expertise, habilidades, competencias, habilidades tecnicas, conocimientos, core skills, technology, technologies and tools, tools and technologies, technical expertise, technical competencies]
+  certifications: [certifications, certificates, licenses, licenses and certifications, certifications and licenses, professional certifications, courses and certifications, certificaciones, certificados, training, training and certifications, courses, professional development]
+  projects: [projects, personal projects, selected projects, key projects, side projects, proyectos, open source, open source contributions, open source projects]
+  awards: [awards, honors, honors and awards, achievements, accomplishments, awards and achievements, premios, logros, honours, honours and awards, awards and honours, recognition]
+  publications: [publications, papers, patents, publicaciones, selected publications, publications and talks, talks, speaking, talks and writing, conference talks, research publications]
   languages: [languages, language skills, idiomas]
   interests: [interests, hobbies, hobbies and interests, intereses]
   volunteering: [volunteering, volunteer experience, community involvement, voluntariado]

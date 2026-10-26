@@ -14,21 +14,27 @@ from src.pipeline import delete, overview
 st.set_page_config(page_title="Index", page_icon="\U0001f4da", layout="wide")
 settings = ui.get_settings()
 conn = ui.get_conn(settings)
+ui.mode_switch()
+developer = ui.is_developer()
 
 st.title("Indexes")
 ui.show_flash()
 
 st.subheader("Build")
 configured = [m.name for m in settings.embedding.models]
-models = st.multiselect("Embedding models", configured, default=[settings.embedding.default],
-                        key="models")
+if developer:
+    models = st.multiselect("Embedding models", configured,
+                            default=[settings.embedding.default], key="models")
+else:
+    models = [settings.embedding.default]
 build_col, rebuild_col = st.columns(2)
-build_clicked = build_col.button("Build / update", key="build_btn", type="primary",
+build_label = "Build / update" if developer else "Update the search index"
+build_clicked = build_col.button(build_label, key="build_btn", type="primary",
                                  disabled=not models)
-rebuild_clicked = rebuild_col.button("Rebuild from scratch", key="rebuild_btn",
-                                     disabled=not models,
-                                     help="Re-embeds every chunk. Only needed after changing the "
-                                          "model or its settings.")
+rebuild_clicked = developer and rebuild_col.button(
+    "Rebuild from scratch", key="rebuild_btn", disabled=not models,
+    help="Re-embeds every chunk. Only needed after changing the model or its settings.",
+)
 if build_clicked or rebuild_clicked:
     # doc_ids=set(): sync the indexes only; resumes still waiting are processed on Upload
     ui.render_result(ui.run_with_progress(
@@ -44,45 +50,48 @@ if view.embeddable_chunks == 0:
 elif in_sync and any(m.manifest for m in view.models):
     st.success("Every index matches the database.")
 else:
-    st.warning("Some indexes are missing or out of date. Use **Build / update**.")
+    st.warning("Some indexes are missing or out of date. Use the build button above.")
 
-st.dataframe(
-    [
-        {
-            "embedding model": m.model,
-            "vectors": m.manifest.n_vectors if m.manifest else 0,
-            "dimension": m.manifest.dim if m.manifest else "",
-            "version": m.manifest.index_version if m.manifest else "not built",
-            "built": m.manifest.created_at if m.manifest else "",
-            "matches database": "yes" if m.report.ok else "no",
-            "missing": len(m.report.missing),
-            "stale": len(m.report.stale),
-            "changed": len(m.report.changed),
-        }
-        for m in view.models
-    ],
-    hide_index=True,
-)
-km = view.keyword_manifest
-st.dataframe(
-    [{
-        "keyword index": "BM25 (" + (km.tokenizer if km else settings.keyword.tokenizer) + ")",
-        "documents": km.n_docs if km else 0,
-        "built": km.created_at if km else "not built",
-        "matches database": "yes" if view.keyword_report.ok else "no",
-    }],
-    hide_index=True,
-)
+if developer:
+    st.dataframe(
+        [
+            {
+                "embedding model": m.model,
+                "vectors": m.manifest.n_vectors if m.manifest else 0,
+                "dimension": m.manifest.dim if m.manifest else "",
+                "version": m.manifest.index_version if m.manifest else "not built",
+                "built": m.manifest.created_at if m.manifest else "",
+                "matches database": "yes" if m.report.ok else "no",
+                "missing": len(m.report.missing),
+                "stale": len(m.report.stale),
+                "changed": len(m.report.changed),
+            }
+            for m in view.models
+        ],
+        hide_index=True,
+    )
+    km = view.keyword_manifest
+    st.dataframe(
+        [{
+            "keyword index": "BM25 (" + (km.tokenizer if km else settings.keyword.tokenizer) + ")",
+            "documents": km.n_docs if km else 0,
+            "built": km.created_at if km else "not built",
+            "matches database": "yes" if view.keyword_report.ok else "no",
+        }],
+        hide_index=True,
+    )
 
-st.subheader("Chunk sizes")
-if view.sizes:
-    frame = pd.DataFrame({"chunks": [c for _, c in view.sizes]}, index=[b for b, _ in view.sizes])
-    st.bar_chart(frame)
-    st.caption("Tokens per embedded chunk (conservative estimate). The budgets below decide when "
-               "an entry is split.")
-    st.dataframe(view.budget_rows, hide_index=True)
-else:
-    st.caption("No embedded chunks yet.")
+    st.subheader("Chunk sizes")
+    if view.sizes:
+        frame = pd.DataFrame(
+            {"chunks": [c for _, c in view.sizes]}, index=[b for b, _ in view.sizes]
+        )
+        st.bar_chart(frame)
+        st.caption("Tokens per embedded chunk (conservative estimate). The budgets below "
+                   "decide when an entry is split.")
+        st.dataframe(view.budget_rows, hide_index=True)
+    else:
+        st.caption("No embedded chunks yet.")
 
 st.subheader("Remove a candidate")
 candidates = overview.candidate_rows(conn)

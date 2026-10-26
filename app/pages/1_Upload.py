@@ -14,6 +14,8 @@ from src.pipeline import run as pipeline
 st.set_page_config(page_title="Upload", page_icon="⬆️", layout="wide")
 settings = ui.get_settings()
 conn = ui.get_conn(settings)
+ui.mode_switch()
+developer = ui.is_developer()
 
 st.title("Upload resumes")
 ui.show_flash()
@@ -59,7 +61,10 @@ else:
     shown = st.multiselect("Show statuses", statuses, default=statuses)
     st.dataframe(
         [{**r, "status": ui.status_text(r["status"])} for r in rows if r["status"] in shown],
-        column_order=["file", "status", "candidate", "type", "parser", "note", "uploaded"],
+        column_order=(
+            ["file", "status", "candidate", "type", "parser", "note", "uploaded"] if developer
+            else ["file", "status", "candidate", "note"]
+        ),
         hide_index=True,
     )
 

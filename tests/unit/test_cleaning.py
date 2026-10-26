@@ -27,8 +27,25 @@ def test_hyphenated_line_break_is_rejoined():
     assert cleaning.clean_markdown(text) == "strong experience in design"
 
 
-def test_capitalised_hyphen_break_and_ranges_kept():
-    text = "Full-\nstack developer\n2019-\n2021"
+@pytest.mark.parametrize(
+    "broken,fixed",
+    [
+        ("informa-\ntion design", "information design"),  # typesetter hyphenation: glued
+        ("customer-\nvisible downtime", "customer-visible downtime"),  # real hyphen: kept
+        ("Full-\nstack developer", "Full-stack developer"),
+        ("cross-\nfunctional teams", "cross-functional teams"),
+        ("linkedin.com/in/ananya-\nkrishnan-example", "linkedin.com/in/ananya-krishnan-example"),
+        ("re-\nusable components", "re-usable components"),
+    ],
+)
+def test_a_hyphen_ending_a_line_loses_the_break_but_only_real_word_splits_lose_the_hyphen(
+    broken, fixed
+):
+    assert cleaning.clean_markdown(broken) == fixed
+
+
+def test_number_ranges_are_left_alone():
+    text = "2019-\n2021 and Jan-\n2020"
     assert cleaning.clean_markdown(text) == text
 
 
@@ -61,3 +78,24 @@ def test_cleaning_is_idempotent():
     raw = "• ﬁrst  \n\n\n\n– exper-\nience\n"
     once = cleaning.clean_markdown(raw)
     assert cleaning.clean_markdown(once) == once
+
+
+def test_merged_paragraph_gets_its_bullets_back_on_separate_lines():
+    raw = "Web Developer, Self-employed •  Built sites for 11 clients. •  Wrote a checkout plugin."
+    out = cleaning.clean_markdown(raw)
+    assert out.splitlines() == [
+        "Web Developer, Self-employed",
+        "- Built sites for 11 clients.",
+        "- Wrote a checkout plugin.",
+    ]
+
+
+@pytest.mark.parametrize(
+    "line", ["- 2018 - 2019 **Web Developer** - Self-employed", "- 2021 - Present **Engineer**"]
+)
+def test_date_first_entry_is_not_a_list_item(line):
+    assert not cleaning.clean_markdown(line).startswith("-")
+
+
+def test_a_real_bullet_that_starts_with_a_year_keeps_its_marker():
+    assert cleaning.clean_markdown("- 2019 revenue grew 20%") == "- 2019 revenue grew 20%"

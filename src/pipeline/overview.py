@@ -121,7 +121,7 @@ class DocumentView:
     @property
     def education_table(self) -> list[dict]:
         return [] if self.profile is None else [
-            {"degree": e.degree, "school": e.school, "year": e.year or ""}
+            {"degree": e.degree, "school": e.school, "year": str(e.year) if e.year else ""}
             for e in self.profile.education
         ]
 
@@ -129,14 +129,15 @@ class DocumentView:
     def skills_table(self) -> list[dict]:
         return [] if self.profile is None else [
             {"skill": s.skill, "evidence": s.evidence, "claimed": s.claimed, "used": s.used,
-             "years": s.years or ""}
+             "years": f"{s.years:g}" if s.years else ""}
             for s in self.profile.skills
         ]
 
     @property
     def certifications_table(self) -> list[dict]:
         return [] if self.profile is None else [
-            {"certification": c.name, "year": c.year or ""} for c in self.profile.certifications
+            {"certification": c.name, "year": str(c.year) if c.year else ""}
+            for c in self.profile.certifications
         ]
 
     @property

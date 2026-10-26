@@ -192,3 +192,26 @@ def test_empty_database_index_overview(conn, settings):
     view = overview.index_overview(conn, settings)
     assert view.embeddable_chunks == 0 and view.sizes == [] and view.budget_rows == []
     assert view.keyword_report.n_db == 0 and view.models[0].manifest is None
+
+
+def test_every_table_is_arrow_compatible(conn, settings, world):
+    """Streamlit converts tables through Arrow; a column mixing numbers and text ('' for a
+    missing value) makes it log a conversion error, so every column must keep one type."""
+    pandas = pytest.importorskip("pandas")
+    pyarrow = pytest.importorskip("pyarrow")
+    docs, bad = world
+    tables = [overview.document_rows(conn), overview.candidate_rows(conn)]
+    for doc_id in (*docs, bad):
+        view = overview.document_view(conn, settings, doc_id)
+        tables += [view.experience_table, view.skills_table, view.education_table,
+                   view.certifications_table, view.gaps_table, view.sections, view.chunks]
+    for rows in tables:
+        if rows:
+            pyarrow.Table.from_pandas(pandas.DataFrame(rows))  # raises ArrowInvalid on a mix
+
+
+def test_a_skill_without_years_has_an_empty_text_cell(conn, settings, world):
+    docs, _ = world
+    skills = {s["skill"]: s for s in overview.document_view(conn, settings, docs[0]).skills_table}
+    assert skills["AWS"]["years"] == ""  # claimed, never used in a job
+    assert skills["Kubernetes"]["years"] == "3.8"  # 45 months, shown as text

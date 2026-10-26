@@ -122,3 +122,28 @@ def render_result(result: pipeline.RunResult) -> None:
         st.warning(f"{doc.filename}: {doc.status}. {doc.error or ''}")
     if not result.errors:
         st.success(result.summary())
+
+
+# --- user / developer view ---------------------------------------------------------------
+
+USER_MODE, DEVELOPER_MODE = "User", "Developer"
+MODE_KEY = "view_mode"
+
+
+def mode_switch() -> None:
+    """The User / Developer switch in the sidebar, shared by every page (same session key).
+
+    User mode shows what an interviewer needs: candidates, their facts, a one-click index
+    update. Developer mode adds the pipeline internals: raw file, Markdown, sections, chunks,
+    embedding models, rebuilds and sizes."""
+    st.sidebar.radio(
+        "View",
+        [USER_MODE, DEVELOPER_MODE],
+        key=MODE_KEY,
+        horizontal=True,
+        help="Developer view adds the pipeline internals (parsing, chunks, index details).",
+    )
+
+
+def is_developer() -> bool:
+    return st.session_state.get(MODE_KEY, USER_MODE) == DEVELOPER_MODE

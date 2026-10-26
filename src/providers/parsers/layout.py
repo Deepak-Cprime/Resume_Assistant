@@ -12,9 +12,13 @@ from collections import Counter
 from dataclasses import dataclass
 from typing import Any
 
-NARROW_BLOCK = 0.6  # a text block narrower than this share of the page is a column candidate
-MIN_BLOCK_CHARS = 15
+NARROW_BLOCK = 0.65  # a text block narrower than this share of the page is a column candidate
+MIN_BLOCK_CHARS = 3  # ignore stray glyphs; short labels ("SQL", "CONTACT") count
 MIN_BLOCKS_PER_COLUMN = 2
+# Each side must carry this share of the narrow text. A sidebar of skill labels does; the
+# right-aligned dates of a one-column resume (a few percent) do not, and must not become a column.
+MIN_COLUMN_TEXT_SHARE = 0.10
+MAX_STRADDLE_SHARE = 0.10
 MIN_VERTICAL_OVERLAP = 0.5
 SPLIT_TOLERANCE = 2.0
 
@@ -31,29 +35,47 @@ _BOLD_FLAG = 16
 def find_column_split(page: Any) -> float | None:
     """x position of the gutter if narrow text blocks form a left and a right column.
 
-    A single-column page has full-width blocks, which are ignored. Right-aligned dates in a
-    single-column layout can look like a second column; the column-aware renderer then reads
-    the page in the same order anyway, so a false positive is harmless.
+    A single-column page has full-width blocks, which are ignored. A false positive is NOT
+    harmless: reading 'all left blocks, then all right blocks' would pull every right-aligned
+    date away from its job title, so both sides must hold a real share of the text.
+
+    Blocks are not assigned by their centre (a short heading of the main column can sit left
+    of the page middle). Instead each block's left edge is tried as the start of the right
+    column; it is a gutter if no block straddles it and both sides are substantial.
     """
     width = page.rect.width
-    left: list[tuple[float, float, float, float]] = []
-    right: list[tuple[float, float, float, float]] = []
+    blocks = []  # (x0, y0, x1, y1, chars)
     for x0, y0, x1, y1, text, _no, kind in page.get_text("blocks"):
-        if kind != 0 or len(text.strip()) < MIN_BLOCK_CHARS or (x1 - x0) >= NARROW_BLOCK * width:
+        n = len(text.strip())
+        if kind == 0 and n >= MIN_BLOCK_CHARS and (x1 - x0) < NARROW_BLOCK * width:
+            blocks.append((x0, y0, x1, y1, n))
+    best: tuple[float, float] | None = None  # (smaller side's text share, gutter x)
+    for start in sorted({round(b[0]) for b in blocks}):
+        left = [b for b in blocks if b[2] <= start + SPLIT_TOLERANCE]
+        right = [b for b in blocks if b[0] >= start - SPLIT_TOLERANCE]
+        if not left or not right:
             continue
-        (left if (x0 + x1) / 2 < width / 2 else right).append((x0, y0, x1, y1))
-    if len(left) < MIN_BLOCKS_PER_COLUMN or len(right) < MIN_BLOCKS_PER_COLUMN:
-        return None
-    left_edge, right_edge = max(b[2] for b in left), min(b[0] for b in right)
-    if left_edge > right_edge:  # columns must not overlap horizontally
-        return None
-    l_top, l_bot = min(b[1] for b in left), max(b[3] for b in left)
-    r_top, r_bot = min(b[1] for b in right), max(b[3] for b in right)
-    overlap = max(0.0, min(l_bot, r_bot) - max(l_top, r_top))
-    shorter = min(l_bot - l_top, r_bot - r_top)
-    if shorter <= 0 or overlap / shorter < MIN_VERTICAL_OVERLAP:
-        return None
-    return (left_edge + right_edge) / 2
+        # A centred name/title band may straddle the gutter; it is read as a header (see
+        # order_blocks) as long as it is a small part of the page.
+        straddle = sum(b[4] for b in blocks if b not in left and b not in right)
+        if straddle > MAX_STRADDLE_SHARE * sum(b[4] for b in blocks):
+            continue
+        if len(left) < MIN_BLOCKS_PER_COLUMN or len(right) < MIN_BLOCKS_PER_COLUMN:
+            continue
+        l_chars, r_chars = sum(b[4] for b in left), sum(b[4] for b in right)
+        share = min(l_chars, r_chars) / (l_chars + r_chars)
+        if share < MIN_COLUMN_TEXT_SHARE:
+            continue
+        l_top, l_bot = min(b[1] for b in left), max(b[3] for b in left)
+        r_top, r_bot = min(b[1] for b in right), max(b[3] for b in right)
+        overlap = max(0.0, min(l_bot, r_bot) - max(l_top, r_top))
+        shorter = min(l_bot - l_top, r_bot - r_top)
+        if shorter <= 0 or overlap / shorter < MIN_VERTICAL_OVERLAP:
+            continue
+        gutter = (max(b[2] for b in left) + min(b[0] for b in right)) / 2
+        if best is None or share > best[0]:
+            best = (share, gutter)
+    return best[1] if best else None
 
 
 def detect_multi_column(page: Any) -> bool:

@@ -7,7 +7,7 @@ from collections.abc import Iterator
 
 from src.structure.dates import find_range
 from src.structure.sections import SectionMatcher, load_matcher
-from src.structure.text import looks_like_name, strip_md
+from src.structure.text import looks_like_name, strip_credentials, strip_md
 
 # Starts with a letter/digit and ends the domain on one, so Markdown italics around an address
 # ("_a@b.com_") are not read as part of it.
@@ -80,8 +80,10 @@ def find_name(lines: list[str], matcher: SectionMatcher | None = None) -> str:
             and not words & _NOT_A_NAME
         )
 
-    candidates = [strip_md(ln) for ln in lines if re.match(r"^#\s+\S", ln)]
-    near_top = [strip_md(ln) for ln in lines[:NAME_SEARCH_LINES * 3] if ln.strip()]
+    candidates = [strip_credentials(strip_md(ln)) for ln in lines if re.match(r"^#\s+\S", ln)]
+    near_top = [
+        strip_credentials(strip_md(ln)) for ln in lines[: NAME_SEARCH_LINES * 3] if ln.strip()
+    ]
     for text in candidates + near_top[:NAME_SEARCH_LINES]:
         if usable(text):
             return text.title() if text.isupper() else text
